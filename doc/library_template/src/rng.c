@@ -1,7 +1,7 @@
 //
 // Created by marijn on 4/15/23.
 //
-#include "rng.h"
+#include "../include/rng.h"
 
 
 /*!< variables */  // mod, mul, inc are set in accordance with GCC

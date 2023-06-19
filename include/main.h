@@ -6,10 +6,10 @@
 #include <malloc.h>
 #include <stdint.h>
 
-#if defined(STM32F4xx)
-#include "stm32f4xx.h"
-#elif defined(STM32F3xx)
-#include "stm32f3xx.h"
+#if defined(STM32H7xx)
+#include "stm32h7xx.h"
+#else
+#error invalid board selected
 #endif
 
 #endif //STM32F_MAIN_H

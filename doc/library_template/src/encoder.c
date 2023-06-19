@@ -1,7 +1,7 @@
 //
 // Created by marijn on 4/19/23.
 //
-#include "encoder.h"
+#include "../include/encoder.h"
 
 
 /*!< static */

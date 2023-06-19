@@ -1,7 +1,7 @@
 //
 // Created by marijn on 2/13/23.
 //
-#include "gpio.h"
+#include "../include/gpio.h"
 
 
 /*!< misc */

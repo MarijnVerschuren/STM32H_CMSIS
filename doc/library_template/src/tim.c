@@ -1,7 +1,7 @@
 //
 // Created by marijn on 2/13/23.
 //
-#include "tim.h"
+#include "../include/tim.h"
 
 
 /*!< static */

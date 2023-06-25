@@ -7,22 +7,37 @@
 #include "main.h"
 
 
+/* clock address order
+APB1_BASE
+APB2_BASE
+AHB1_BASE
+AHB2_BASE
+APB3_BASE
+AHB3_BASE
+APB4_BASE
+AHB4_BASE
+*/
+
 // device id
 typedef enum {
-	DEV_CLOCK_ID_AHB1 = 0,
-	DEV_CLOCK_ID_AHB2 = 1,
-	DEV_CLOCK_ID_APB1 = 2,
-	DEV_CLOCK_ID_APB2 = 3,
-	DEV_CLOCK_INVALID = 4,
+	DEV_CLOCK_ID_APB1 = 0,
+	DEV_CLOCK_ID_AHB1 = 1,
+	DEV_CLOCK_ID_APB2 = 2,
+	DEV_CLOCK_ID_AHB2 = 3,
+	DEV_CLOCK_ID_APB3 = 4,
+	DEV_CLOCK_ID_AHB3 = 5,
+	DEV_CLOCK_ID_APB4 = 6,
+	DEV_CLOCK_ID_AHB4 = 7,
+	DEV_CLOCK_NONE = 8
 } dev_clock_id_t;
 
 typedef struct {
-	uint8_t		num: 5;
-	uint8_t		reg: 3;  // dev_clock_id_t
+	uint16_t		num: 10;	// 1024
+	uint16_t		reg: 6;		// dev_clock_id_t [0, 64]
 } dev_id_t;
 
 typedef struct {
-	dev_id_t	dev_id;	// 8 bit
+	dev_id_t	dev_id;		// 16 bit
 	uint8_t		dev_info	: 4;
 	uint8_t		alt_func	: 4;
 	uint8_t		port_num	: 4;

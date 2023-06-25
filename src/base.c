@@ -1,6 +1,7 @@
 //
-// Created by marijn on 4/2/23.
+// Created by marijn on 6/26/23.
 //
+
 #include "base.h"
 
 
@@ -17,15 +18,15 @@ dev_id_t dev_to_id(void* dev) {
 	return (dev_id_t){((uint32_t)dev - AHB4_BASE) >> 10u, DEV_CLOCK_ID_AHB4};  // TODO: check out of range
 }
 void* id_to_dev(dev_id_t id) {
-	if (id.reg == DEV_CLOCK_NONE)		{ return NULL; }
-	if (id.reg == DEV_CLOCK_ID_APB1)	{ return (void*)((id.num << 10) + APB1_BASE); }
-	if (id.reg == DEV_CLOCK_ID_APB2)	{ return (void*)((id.num << 10) + APB2_BASE); }
-	if (id.reg == DEV_CLOCK_ID_AHB1)	{ return (void*)((id.num << 10) + AHB1_BASE); }
-	if (id.reg == DEV_CLOCK_ID_AHB2)	{ return (void*)((id.num << 10) + AHB2_BASE); }
-	if (id.reg == DEV_CLOCK_ID_APB3)	{ return (void*)((id.num << 10) + APB3_BASE); }
-	if (id.reg == DEV_CLOCK_ID_AHB3)	{ return (void*)((id.num << 10) + AHB3_BASE); }
-	if (id.reg == DEV_CLOCK_ID_APB4)	{ return (void*)((id.num << 10) + APB4_BASE); }
-	return (void*)((id.num << 10) + AHB4_BASE);
+	if (id.clk == DEV_CLOCK_NONE)		{ return NULL; }
+	if (id.clk == DEV_CLOCK_ID_APB1)	{ return (void*)((id.dev << 10) + APB1_BASE); }
+	if (id.clk == DEV_CLOCK_ID_APB2)	{ return (void*)((id.dev << 10) + APB2_BASE); }
+	if (id.clk == DEV_CLOCK_ID_AHB1)	{ return (void*)((id.dev << 10) + AHB1_BASE); }
+	if (id.clk == DEV_CLOCK_ID_AHB2)	{ return (void*)((id.dev << 10) + AHB2_BASE); }
+	if (id.clk == DEV_CLOCK_ID_APB3)	{ return (void*)((id.dev << 10) + APB3_BASE); }
+	if (id.clk == DEV_CLOCK_ID_AHB3)	{ return (void*)((id.dev << 10) + AHB3_BASE); }
+	if (id.clk == DEV_CLOCK_ID_APB4)	{ return (void*)((id.dev << 10) + APB4_BASE); }
+	return (void*)((id.dev << 10) + AHB4_BASE);
 }
 
 

@@ -1,15 +1,17 @@
 //
-// Created by marijn on 2/13/23.
+// Created by marijn on 6/26/23.
 //
-#ifndef STM32F_MAIN_H
-#define STM32F_MAIN_H
+
+#ifndef STM32H_CMSIS_MAIN_H
+#define STM32H_CMSIS_MAIN_H
 #include <malloc.h>
 #include <stdint.h>
 
 #if defined(STM32H7xx)
 #include "stm32h7xx.h"
 
-// clock redefinitions (0x40000000UL)
+// clock redefinitions
+#define CLK_BASE  PERIPH_BASE			/* 0x40000000UL */
 #define APB1_BASE D2_APB1PERIPH_BASE	/* 0x00000000UL */
 #define AHB1_BASE D2_AHB1PERIPH_BASE	/* 0x00020000UL */
 #define APB2_BASE D2_APB2PERIPH_BASE	/* 0x00010000UL */
@@ -24,4 +26,4 @@
 
 #include "base.h"
 
-#endif //STM32F_MAIN_H
+#endif //STM32H_CMSIS_MAIN_H

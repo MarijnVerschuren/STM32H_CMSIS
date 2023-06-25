@@ -1,24 +1,13 @@
 //
-// Created by marijn on 4/2/23.
+// Created by marijn on 6/26/23.
 //
 
-#ifndef STM32F_CMSIS_BASE_H
-#define STM32F_CMSIS_BASE_H
+#ifndef STM32H_CMSIS_BASE_H
+#define STM32H_CMSIS_BASE_H
 #include "main.h"
 
 
-/* clock address order
-APB1_BASE
-APB2_BASE
-AHB1_BASE
-AHB2_BASE
-APB3_BASE
-AHB3_BASE
-APB4_BASE
-AHB4_BASE
-*/
-
-// device id
+/*!< device_id */
 typedef enum {
 	DEV_CLOCK_ID_APB1 = 0,
 	DEV_CLOCK_ID_AHB1 = 1,
@@ -32,8 +21,8 @@ typedef enum {
 } dev_clock_id_t;
 
 typedef struct {
-	uint16_t		num: 10;	// 1024
-	uint16_t		reg: 6;		// dev_clock_id_t [0, 64]
+	uint16_t	dev: 10;	// 1024
+	uint16_t	clk: 6;		// dev_clock_id_t (overhead for different MCUs)
 } dev_id_t;
 
 typedef struct {
@@ -44,6 +33,7 @@ typedef struct {
 	uint8_t		pin_num		: 4;
 } dev_pin_t;
 
+/*!< buffer */
 typedef struct {
 	volatile void*		ptr;
 	uint32_t			size;
@@ -52,7 +42,7 @@ typedef struct {
 } io_buffer_t;
 
 
-/*!< device */
+/*!< device_id */
 dev_id_t dev_to_id(void* dev);
 void* id_to_dev(dev_id_t id);
 /*!< buffer */
@@ -60,4 +50,4 @@ io_buffer_t* new_buffer(uint32_t size);
 void free_buffer(io_buffer_t* buf);
 
 
-#endif //STM32F_CMSIS_BASE_H
+#endif //STM32H_CMSIS_BASE_H

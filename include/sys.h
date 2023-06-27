@@ -88,7 +88,7 @@ typedef struct {
 	uint64_t	R_factor	: 7;	// (+1)
 	uint64_t	N_factor	: 9;	// (+1)
 	// RCC_PLLxDIVR
-	uint64_t	N_fraction	: 13;
+	uint64_t	N_fraction	: 13;	// PLL_IN * (N_factor (+1) + (N_fraction / 2^13))
 } PLL_CLK_Config_t;	// 56 bit
 
 typedef struct {

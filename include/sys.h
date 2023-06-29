@@ -43,26 +43,26 @@ typedef enum {
 } FLASH_PROG_DELAY_t;
 
 typedef enum {
-	PLL_SRC_HSI =		0b00,	//*
+	PLL_SRC_HSI =		0b00,	//R
 	PLL_SRC_CSI =		0b01,
 	PLL_SRC_HSE =		0b10,
 	PLL_SRC_DISABLED =	0b11,
 } PLL_SRC_t;		// 2 bit
 
 typedef enum {
-	PLL_IN_1MHz_2MHz =	0b00,	//*	// 1 MHz < CLK_IN < 2 MHz
+	PLL_IN_1MHz_2MHz =	0b00,	//R	// 1 MHz < CLK_IN < 2 MHz
 	PLL_IN_2MHz_4MHz =	0b01,		// 2 MHz < CLK_IN < 4 MHz
 	PLL_IN_4MHz_8MHz =	0b10,		// 4 MHz < CLK_IN < 8 MHz
 	PLL_IN_8MHz_16MHz =	0b11		// 8 MHz < CLK_IN < 16 MHz
 } PLL_IN_t;			// 2 bit
 
 typedef enum {
-	PLL_VCO_WIDE =		0b00,	//*	// 192 MHz < PLL_CLK < 960 MHz
+	PLL_VCO_WIDE =		0b00,	//R	// 192 MHz < PLL_CLK < 960 MHz
 	PLL_VCO_MEDIUM =	0b01,		// 150 MHz < PLL_CLK < 420 MHz
 } PLL_VCO_t;		// 2 bit
 
 typedef enum {
-	SYS_CLK_SRC_HSI =	0b00,	//*
+	SYS_CLK_SRC_HSI =	0b00,	//R
 	SYS_CLK_SRC_CSI =	0b01,
 	SYS_CLK_SRC_HSE =	0b10,
 	SYS_CLK_SRC_PLL1 =	0b11,		// PLL1_P
@@ -92,7 +92,7 @@ typedef struct {
 } PLL_CLK_Config_t;	// 56 bit
 
 typedef struct {
-	double				HSE_freq;				// [4, 48] MHz
+	uint32_t 			HSE_freq;				// [4, 48] MHz
 	PLL_CLK_Config_t	PLL1_config;
 	PLL_CLK_Config_t	PLL2_config;
 	PLL_CLK_Config_t	PLL3_config;
@@ -101,15 +101,40 @@ typedef struct {
 } SYS_CLK_Config_t;
 
 
-/*!< variables */   // values are updated when calling sys_clock_init
-extern uint32_t PLL1_clock_frequency;
-extern uint32_t PLL2_clock_frequency;
-extern uint32_t PLL3_clock_frequency;
+/*!< constants */
+extern const uint32_t LSI_clock_frequency;
+extern const uint32_t LSE_clock_frequency;
+extern const uint32_t CSI_clock_frequency;
+
+
+/*!< variables */  // values are updated when calling sys_clock_init
+extern uint32_t HSI_clock_frequency;
+extern uint32_t HSE_clock_frequency;
+
+extern uint32_t PLL1_P_clock_frequency;
+extern uint32_t PLL1_Q_clock_frequency;
+extern uint32_t PLL1_R_clock_frequency;
+extern uint32_t PLL2_P_clock_frequency;
+extern uint32_t PLL2_Q_clock_frequency;
+extern uint32_t PLL2_R_clock_frequency;
+extern uint32_t PLL3_P_clock_frequency;
+extern uint32_t PLL3_Q_clock_frequency;
+extern uint32_t PLL3_R_clock_frequency;
+
+extern uint32_t APB1_clock_frequency;
+extern uint32_t AHB1_clock_frequency;
+extern uint32_t APB2_clock_frequency;
+extern uint32_t AHB2_clock_frequency;
+extern uint32_t APB3_clock_frequency;
+extern uint32_t AHB3_clock_frequency;
+extern uint32_t APB4_clock_frequency;
+extern uint32_t AHB4_clock_frequency;
+
 extern uint32_t RTC_clock_frequency;
 
 extern uint32_t SYS_clock_frequency;
 
-extern volatile uint64_t tick;  // updated sys_tick
+extern volatile uint64_t tick;  // updated with sys_tick
 
 
 /*!< interrupts */

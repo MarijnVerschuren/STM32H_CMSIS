@@ -3,7 +3,7 @@
 >* Create basic functionality (GPIO, EXTI, TIM, SYS_CFG)
 
 >### High Priority
->* clock security on HSE and LSE (+interrupt)
+>* clock security on HSE and LSE (+interrupt!!)
 >* find out how systick works (found nothing in RCC)
 
 >### Medium Priority
@@ -13,8 +13,12 @@
 >* Low power
 
 >### Features
->*
+>* RCC backup domain (RCC->BDCR)
+>* MCO (micro-controller clock output) (RCC->CFGR)
+>* STOP mode config (RCC->CFGR:STOPWUCK)
+>* clock trimming (RCC->ICSCR, RCC->HSICFGR, RCC->CRRCR, RCC->CSICFGR)
 
 >### Research
+>* oscillator drive?
 >* (clock) Domains
 >* kernel and "per" clocks

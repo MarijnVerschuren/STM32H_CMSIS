@@ -14,9 +14,9 @@ typedef struct {
 	uint32_t ID1;
 	uint32_t ID2;
 } ID;
-
 #define UID ((ID *)UID_BASE)
-typedef void(*sys_tick_t)(void);
+
+typedef void(*IRQ_callback_t)(void);
 
 
 /*!< PLL */
@@ -25,34 +25,35 @@ typedef enum {
 	PLL_IN_2MHz_4MHz =				0b01,		// 2 MHz < CLK_IN < 4 MHz
 	PLL_IN_4MHz_8MHz =				0b10,		// 4 MHz < CLK_IN < 8 MHz
 	PLL_IN_8MHz_16MHz =				0b11		// 8 MHz < CLK_IN < 16 MHz
-} PLL_IN_t;			// 2 bit
+} PLL_IN_t;				// 2 bit
 
 typedef enum {
 	PLL_VCO_WIDE =					0b00,	//R	// 192 MHz < PLL_CLK < 960 MHz
 	PLL_VCO_MEDIUM =				0b01		// 150 MHz < PLL_CLK < 420 MHz
-} PLL_VCO_t;		// 2 bit
+} PLL_VCO_t;			// 2 bit
 
 typedef enum {
 	PLL_SRC_HSI =					0b00,	//R
 	PLL_SRC_CSI =					0b01,
 	PLL_SRC_HSE =					0b10
-} PLL_SRC_t;		// 2 bit
+} PLL_SRC_t;			// 2 bit
 
 typedef struct {
 	uint64_t	enable		: 1;
-	uint64_t	M_factor	: 5;
 	uint64_t	P_enable	: 1;
 	uint64_t	Q_enable	: 1;
 	uint64_t	R_enable	: 1;
+	uint64_t	frac_enable	: 1;
 	uint64_t	input_range	: 2;	// PLL_IN_t
 	uint64_t	VCO_range	: 1;	// PLL_VCO_t
-	uint64_t	frac_enable	: 1;
+	uint64_t	M_factor	: 6;
 	uint64_t	P_factor	: 7;	// (+1)
 	uint64_t	Q_factor	: 7;	// (+1)
 	uint64_t	R_factor	: 7;	// (+1)
 	uint64_t	N_factor	: 9;	// (+1)
 	uint64_t	N_fraction	: 13;	// PLL_IN * (N_factor (+1) + (N_fraction / 2^13))
-} PLL_CLK_Config_t;	// 56 bit
+	uint64_t	_			: 7;
+} PLL_CLK_Config_t;		// 64 bit (8 bit reserved)
 
 
 /*!< RTC */
@@ -61,7 +62,7 @@ typedef enum {
 	RTC_SRC_LSE =					0b01,
 	RTC_SRC_LSI =					0b10,
 	RTC_SRC_HSE =					0b11		// RTC_ck = HSE_ck / RTCPRE
-} RTC_SRC_t;		// 2 bit
+} RTC_SRC_t;			// 2 bit
 
 
 /*!< HSI */
@@ -70,7 +71,7 @@ typedef enum {
 	HSI_DIV_2 = 					0b01,		// 32 MHz
 	HSI_DIV_4 = 					0b10,		// 16 MHz
 	HSI_DIV_8 = 					0b11		// 8 MHz
-} HSI_DIV_t;		// 2 bit
+} HSI_DIV_t;			// 2 bit
 
 
 /*!< SYS */
@@ -78,8 +79,8 @@ typedef enum {
 	SYS_CLK_SRC_HSI =				0b00,	//R
 	SYS_CLK_SRC_CSI =				0b01,
 	SYS_CLK_SRC_HSE =				0b10,
-	SYS_CLK_SRC_PLL =				0b11		// PLL1_P
-} SYS_CLK_SRC_t;	// 2 bit
+	SYS_CLK_SRC_PLL1_P =			0b11
+} SYS_CLK_SRC_t;		// 2 bit
 
 typedef enum {
 	SYS_CLK_DIV_1 =					0b0000,	//R	// 0xxx
@@ -117,7 +118,7 @@ typedef enum {
 	FLASH_PROG_DELAY1 =      0b01,  //    45 < AXI ≤ 135     55 < AXI ≤ 165     70 < AXI ≤ 185     70 < AXI ≤ 185     |
 	FLASH_PROG_DELAY2 =      0b10,  //   135 < AXI ≤ 225    165 < AXI ≤ 225    185 < AXI ≤ 225    185 < AXI ≤ 240     |
 	//================================================================================================================|
-} FLASH_PROG_DELAY_t;		// 2 bit
+} FLASH_PROG_DELAY_t;	// 2 bit
 
 
 /*!< AHB/APB */
@@ -131,7 +132,7 @@ typedef enum {
 	AHB_CLK_DIV_128 =				0b1101,
 	AHB_CLK_DIV_256 =				0b1110,
 	AHB_CLK_DIV_512 =				0b1111
-} AHB_CLK_PRE_t;	// 4 bit
+} AHB_CLK_PRE_t;		// 4 bit
 
 typedef enum {
 	APB_CLK_DIV_1 =					0b000,	//R	// 0xx
@@ -139,19 +140,19 @@ typedef enum {
 	APB_CLK_DIV_4 =					0b101,
 	APB_CLK_DIV_8 =					0b110,
 	APB_CLK_DIV_16 =				0b111,
-} APB_CLK_PRE_t;	// 3 bit
+} APB_CLK_PRE_t;		// 3 bit
 
 
 /*!< PERIPHERALS */
 typedef enum {
 	TIM_DIV_2 =						0b0,	//R	// rcc_hclk1 if D2PPREx is 1 or 2 else 2 x rcc_plckx_d2
 	TIM_DIV_4 =						0b1			// rcc_hclk1 if D2PPREx is 1, 2 or 4 else 4 x rcc_plckx_d2
-} TIM_PRE_t;		// 1 bit
+} TIM_PRE_t;			// 1 bit
 
 typedef enum {
 	HRTIM_SRC_APB2 =				0b0,	//R
 	HRTIM_SRC_CPU =					0b1
-} HRTIM_SRC_t;		// 1 bit
+} HRTIM_SRC_t;			// 1 bit
 
 typedef enum {
 	PER_SRC_HSI_KER =				0b00,	//R
@@ -336,7 +337,7 @@ typedef enum {
 	MCO2_CLK_SRC_PLL1_P =			0b011,
 	MCO2_CLK_SRC_CSI =				0b100,
 	MCO2_CLK_SRC_LSI =				0b101
-} MCO2_CLK_SRC_t;
+} MCO2_CLK_SRC_t;		// 3 bit
 
 typedef enum {
 	MCO1_CLK_SRC_HSI =				0b000,	//R
@@ -344,7 +345,7 @@ typedef enum {
 	MCO1_CLK_SRC_HSE =				0b010,
 	MCO1_CLK_SRC_PLL1_Q =			0b011,
 	MCO1_CLK_SRC_HSI48 =			0b100,
-} MCO1_CLK_SRC_t;
+} MCO1_CLK_SRC_t;		// 3 bit
 
 
 /*!< config struct */
@@ -370,7 +371,7 @@ typedef struct {
 	uint64_t			LSI_enable				: 1;
 	// LSE
 	uint64_t			LSE_enable				: 1;
-	uint64_t			LSE_CSS_enable			: 1;
+	uint64_t			LSE_CSS_enable			: 1;	// enables interrupt automatically
 	// CSI
 	uint64_t			CSI_enable				: 1;
 	uint64_t			CSI_enable_stop_mode	: 1;
@@ -402,7 +403,7 @@ typedef struct {
 	uint64_t			SPI45_CLK_src			: 3;	// SPI45_CLK_SRC_t
 	uint64_t			SPI123_CLK_src			: 3;	// SPI123_CLK_SRC_t
 	uint64_t			SAI23_CLK_src			: 3;	// SAI_CLK_SRC_t
-	uint64_t			SAI1_CLK_src			: 3;	// SAI_CLK_SRC_t		// DFSDM1 Aclk?
+	uint64_t			SAI1_CLK_src			: 3;	// SAI_CLK_SRC_t
 	uint64_t			LPTIM1_CLK_src			: 3;	// LPTIM1_CLK_SRC_t
 	uint64_t			HDMI_CEC_CLK_src		: 2;	// HDMI_CEC_CLK_SRC_t
 	uint64_t			USB_OTG12_CLK_src		: 2;	// USB_OTG12_CLK_SRC_t
@@ -413,7 +414,6 @@ typedef struct {
 	uint64_t			SPI6_CLK_src			: 3;	// SPI6_CLK_SRC_t
 	uint64_t			SAR_ADC_CLK_src			: 2;	// SAR_ADC_CLK_SRC_t
 	uint64_t			I2C4_CLK_src			: 2;	// I2C4_CLK_SRC_t
-
 	uint32_t			SAI4B_CLK_src			: 3;	// SAI4_CLK_SRC_t
 	uint32_t			SAI4A_CLK_src			: 3;	// SAI4_CLK_SRC_t
 	uint32_t			LPTIM345_CLK_src		: 3;	// LPTIM2345_CLK_SRC_t
@@ -451,14 +451,11 @@ extern uint32_t PLL3_P_clock_frequency;
 extern uint32_t PLL3_Q_clock_frequency;
 extern uint32_t PLL3_R_clock_frequency;
 
+extern uint32_t AHB_clock_frequency;
 extern uint32_t APB1_clock_frequency;
-extern uint32_t AHB1_clock_frequency;
 extern uint32_t APB2_clock_frequency;
-extern uint32_t AHB2_clock_frequency;
 extern uint32_t APB3_clock_frequency;
-extern uint32_t AHB3_clock_frequency;
 extern uint32_t APB4_clock_frequency;
-extern uint32_t AHB4_clock_frequency;
 
 extern uint32_t RTC_clock_frequency;
 
@@ -468,10 +465,48 @@ extern volatile uint64_t tick;  // updated with sys_tick
 
 
 /*!< interrupts */
-void SysTick_Handler(void);
+extern void SysTick_Handler(void);
+extern void RCC_IRQHandler(void);
 
-/*!< init / enable / disable */
+/*!< config functions */
 SYS_CLK_Config_t* new_SYS_CLK_config(void);
+void set_PLL_config(
+	PLL_CLK_Config_t* config,				uint8_t enable,						uint8_t P_enable,
+	uint8_t Q_enable,						uint8_t R_enable,					uint8_t frac_enable,
+	PLL_IN_t input_range,					PLL_VCO_t VCO_range,				uint8_t M_factor,
+	uint8_t P_factor,						uint8_t Q_factor,					uint8_t R_factor,
+	uint16_t N_factor,						uint16_t N_fraction
+);
+void set_RTC_config(
+	SYS_CLK_Config_t* config,				uint8_t RTC_enable,
+	RTC_SRC_t RTC_src,						uint8_t RTC_HSE_prescaler
+);
+void set_clock_config(
+	SYS_CLK_Config_t* config,				uint8_t HSI_enable,					uint8_t HSE_enable,
+	uint8_t LSI_enable,						uint8_t LSE_enable,					uint8_t CSI_enable,
+	uint8_t HSI48_enable,					uint8_t HSI_enable_stop_mode,		uint8_t CSI_enable_stop_mode,
+	uint8_t HSE_CSS_enable,					uint8_t LSE_CSS_enable,				HSI_DIV_t HSI_div,
+	uint32_t HSE_freq
+);
+void set_SYS_config(
+	SYS_CLK_Config_t* config,				SYS_CLK_SRC_t SYS_CLK_src,			SYS_CLK_PRE_t SYS_CLK_prescaler,
+	FLASH_PROG_DELAY_t FLASH_program_delay,	FLASH_LATENCY_t FLASH_latency
+);
+void set_domain_config(
+	SYS_CLK_Config_t* config,				AHB_CLK_PRE_t AHB_prescaler,		APB_CLK_PRE_t APB1_prescaler,
+	APB_CLK_PRE_t APB2_prescaler,			APB_CLK_PRE_t APB3_prescaler,		APB_CLK_PRE_t APB4_prescaler
+);
+void set_systick_config(
+	SYS_CLK_Config_t* config,				uint8_t SYSTICK_enable,
+	uint8_t SYSTICK_IRQ_enable,				SYSTICK_CLK_SRC_t SYSTICK_CLK_src
+);
+void set_MCO_config(
+	SYS_CLK_Config_t* config,				MCO1_CLK_SRC_t MCO1_CLK_src,			uint8_t MCO1_CLK_prescaler,
+	MCO2_CLK_SRC_t MCO2_CLK_src,			uint8_t MCO2_CLK_prescaler
+);
+// TODO: peripheral kernel clocks
+/*!< setup functions */
+void IRQ_callback_init(IRQ_callback_t sys_tick_callback, IRQ_callback_t clock_fault_callback);
 void sys_clock_init(SYS_CLK_Config_t* config);
 
 /*!< misc */

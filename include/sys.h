@@ -440,7 +440,6 @@ extern const uint32_t CSI_clock_frequency;
 /*!< variables */  // values are updated when calling sys_clock_init
 extern uint32_t HSI_clock_frequency;
 extern uint32_t HSE_clock_frequency;
-
 extern uint32_t PLL1_P_clock_frequency;
 extern uint32_t PLL1_Q_clock_frequency;
 extern uint32_t PLL1_R_clock_frequency;
@@ -450,17 +449,13 @@ extern uint32_t PLL2_R_clock_frequency;
 extern uint32_t PLL3_P_clock_frequency;
 extern uint32_t PLL3_Q_clock_frequency;
 extern uint32_t PLL3_R_clock_frequency;
-
 extern uint32_t AHB_clock_frequency;
 extern uint32_t APB1_clock_frequency;
 extern uint32_t APB2_clock_frequency;
 extern uint32_t APB3_clock_frequency;
 extern uint32_t APB4_clock_frequency;
-
 extern uint32_t RTC_clock_frequency;
-
 extern uint32_t SYS_clock_frequency;
-
 extern volatile uint64_t tick;  // updated with sys_tick
 
 
@@ -468,13 +463,14 @@ extern volatile uint64_t tick;  // updated with sys_tick
 extern void SysTick_Handler(void);
 extern void RCC_IRQHandler(void);
 
+
 /*!< config functions */
 SYS_CLK_Config_t* new_SYS_CLK_config(void);
 void set_PLL_config(
-	PLL_CLK_Config_t* config,				uint8_t enable,						uint8_t P_enable,
-	uint8_t Q_enable,						uint8_t R_enable,					uint8_t frac_enable,
-	PLL_IN_t input_range,					PLL_VCO_t VCO_range,				uint8_t M_factor,
-	uint8_t P_factor,						uint8_t Q_factor,					uint8_t R_factor,
+	PLL_CLK_Config_t* config,				uint8_t enable,							uint8_t P_enable,
+	uint8_t Q_enable,						uint8_t R_enable,						uint8_t frac_enable,
+	PLL_IN_t input_range,					PLL_VCO_t VCO_range,					uint8_t M_factor,
+	uint8_t P_factor,						uint8_t Q_factor,						uint8_t R_factor,
 	uint16_t N_factor,						uint16_t N_fraction
 );
 void set_RTC_config(
@@ -482,19 +478,19 @@ void set_RTC_config(
 	RTC_SRC_t RTC_src,						uint8_t RTC_HSE_prescaler
 );
 void set_clock_config(
-	SYS_CLK_Config_t* config,				uint8_t HSI_enable,					uint8_t HSE_enable,
-	uint8_t LSI_enable,						uint8_t LSE_enable,					uint8_t CSI_enable,
-	uint8_t HSI48_enable,					uint8_t HSI_enable_stop_mode,		uint8_t CSI_enable_stop_mode,
-	uint8_t HSE_CSS_enable,					uint8_t LSE_CSS_enable,				HSI_DIV_t HSI_div,
+	SYS_CLK_Config_t* config,				uint8_t HSI_enable,						uint8_t HSE_enable,
+	uint8_t LSI_enable,						uint8_t LSE_enable,						uint8_t CSI_enable,
+	uint8_t HSI48_enable,					uint8_t HSI_enable_stop_mode,			uint8_t CSI_enable_stop_mode,
+	uint8_t HSE_CSS_enable,					uint8_t LSE_CSS_enable,					HSI_DIV_t HSI_div,
 	uint32_t HSE_freq
 );
 void set_SYS_config(
-	SYS_CLK_Config_t* config,				SYS_CLK_SRC_t SYS_CLK_src,			SYS_CLK_PRE_t SYS_CLK_prescaler,
-	FLASH_PROG_DELAY_t FLASH_program_delay,	FLASH_LATENCY_t FLASH_latency
+	SYS_CLK_Config_t* config,				SYS_CLK_SRC_t SYS_CLK_src,				SYS_CLK_PRE_t SYS_CLK_prescaler,
+	FLASH_LATENCY_t FLASH_latency,			FLASH_PROG_DELAY_t FLASH_program_delay
 );
 void set_domain_config(
-	SYS_CLK_Config_t* config,				AHB_CLK_PRE_t AHB_prescaler,		APB_CLK_PRE_t APB1_prescaler,
-	APB_CLK_PRE_t APB2_prescaler,			APB_CLK_PRE_t APB3_prescaler,		APB_CLK_PRE_t APB4_prescaler
+	SYS_CLK_Config_t* config,				AHB_CLK_PRE_t AHB_prescaler,			APB_CLK_PRE_t APB1_prescaler,
+	APB_CLK_PRE_t APB2_prescaler,			APB_CLK_PRE_t APB3_prescaler,			APB_CLK_PRE_t APB4_prescaler
 );
 void set_systick_config(
 	SYS_CLK_Config_t* config,				uint8_t SYSTICK_enable,
@@ -505,9 +501,12 @@ void set_MCO_config(
 	MCO2_CLK_SRC_t MCO2_CLK_src,			uint8_t MCO2_CLK_prescaler
 );
 // TODO: peripheral kernel clocks
+
+
 /*!< setup functions */
 void IRQ_callback_init(IRQ_callback_t sys_tick_callback, IRQ_callback_t clock_fault_callback);
 void sys_clock_init(SYS_CLK_Config_t* config);
+
 
 /*!< misc */
 void delay_ms(uint64_t ms);

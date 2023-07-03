@@ -66,10 +66,10 @@ SYS_CLK_Config_t* new_SYS_CLK_config(void) {
 }
 
 void set_PLL_config(
-	PLL_CLK_Config_t* config,				uint8_t enable,						uint8_t P_enable,
-	uint8_t Q_enable,						uint8_t R_enable,					uint8_t frac_enable,
-	PLL_IN_t input_range,					PLL_VCO_t VCO_range,				uint8_t M_factor,
-	uint8_t P_factor,						uint8_t Q_factor,					uint8_t R_factor,
+	PLL_CLK_Config_t* config,				uint8_t enable,							uint8_t P_enable,
+	uint8_t Q_enable,						uint8_t R_enable,						uint8_t frac_enable,
+	PLL_IN_t input_range,					PLL_VCO_t VCO_range,					uint8_t M_factor,
+	uint8_t P_factor,						uint8_t Q_factor,						uint8_t R_factor,
 	uint16_t N_factor,						uint16_t N_fraction
 ) {
 	config->enable =		enable;
@@ -80,10 +80,10 @@ void set_PLL_config(
 	config->input_range =	input_range;
 	config->VCO_range =		VCO_range;
 	config->M_factor =		M_factor;
-	config->P_factor =		P_factor;
-	config->Q_factor =		Q_factor;
-	config->R_factor =		R_factor;
-	config->N_factor =		N_factor;
+	config->P_factor =		P_factor ? P_factor - 1 : 0;
+	config->Q_factor =		Q_factor ? Q_factor - 1 : 0;
+	config->R_factor =		R_factor ? R_factor - 1 : 0;
+	config->N_factor =		N_factor ? N_factor - 1 : 0;
 	config->N_fraction =	N_fraction;
 }
 
@@ -97,10 +97,10 @@ void set_RTC_config(
 }
 
 void set_clock_config(
-	SYS_CLK_Config_t* config,				uint8_t HSI_enable,					uint8_t HSE_enable,
-	uint8_t LSI_enable,						uint8_t LSE_enable,					uint8_t CSI_enable,
-	uint8_t HSI48_enable,					uint8_t HSI_enable_stop_mode,		uint8_t CSI_enable_stop_mode,
-	uint8_t HSE_CSS_enable,					uint8_t LSE_CSS_enable,				HSI_DIV_t HSI_div,
+	SYS_CLK_Config_t* config,				uint8_t HSI_enable,						uint8_t HSE_enable,
+	uint8_t LSI_enable,						uint8_t LSE_enable,						uint8_t CSI_enable,
+	uint8_t HSI48_enable,					uint8_t HSI_enable_stop_mode,			uint8_t CSI_enable_stop_mode,
+	uint8_t HSE_CSS_enable,					uint8_t LSE_CSS_enable,					HSI_DIV_t HSI_div,
 	uint32_t HSE_freq
 ) {
 	config->HSI_enable =			HSI_enable;
@@ -118,8 +118,8 @@ void set_clock_config(
 }
 
 void set_SYS_config(
-	SYS_CLK_Config_t* config,				SYS_CLK_SRC_t SYS_CLK_src,			SYS_CLK_PRE_t SYS_CLK_prescaler,
-	FLASH_PROG_DELAY_t FLASH_program_delay,	FLASH_LATENCY_t FLASH_latency
+	SYS_CLK_Config_t* config,				SYS_CLK_SRC_t SYS_CLK_src,				SYS_CLK_PRE_t SYS_CLK_prescaler,
+	FLASH_LATENCY_t FLASH_latency,			FLASH_PROG_DELAY_t FLASH_program_delay
 ) {
 	config->SYS_CLK_src =			SYS_CLK_src;
 	config->SYS_CLK_prescaler =		SYS_CLK_prescaler;
@@ -128,8 +128,8 @@ void set_SYS_config(
 }
 
 void set_domain_config(
-	SYS_CLK_Config_t* config,				AHB_CLK_PRE_t AHB_prescaler,		APB_CLK_PRE_t APB1_prescaler,
-	APB_CLK_PRE_t APB2_prescaler,			APB_CLK_PRE_t APB3_prescaler,		APB_CLK_PRE_t APB4_prescaler
+	SYS_CLK_Config_t* config,				AHB_CLK_PRE_t AHB_prescaler,			APB_CLK_PRE_t APB1_prescaler,
+	APB_CLK_PRE_t APB2_prescaler,			APB_CLK_PRE_t APB3_prescaler,			APB_CLK_PRE_t APB4_prescaler
 ) {
 	config->AHB_prescaler =		AHB_prescaler;
 	config->APB1_prescaler =	APB1_prescaler;
@@ -343,7 +343,8 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			(config->HSI_enable << RCC_CR_HSIRDY_Pos)						|
 			(config->HSE_enable << RCC_CR_HSERDY_Pos)						|
 			(config->CSI_enable << RCC_CR_CSIRDY_Pos)						|
-			(config->HSI48_enable << RCC_CR_HSI48RDY_Pos)
+			(config->HSI48_enable << RCC_CR_HSI48RDY_Pos)					|
+			(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)
 	);
 	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled clocks are ready
 	/*!< switch sys-clock */

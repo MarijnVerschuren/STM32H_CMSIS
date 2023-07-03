@@ -139,28 +139,52 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			(config->FLASH_program_delay << FLASH_ACR_WRHIGHFREQ_Pos)		|
 			(config->FLASH_latency << FLASH_ACR_LATENCY_Pos)
 	);
-	/*!< configure domain pre-scalars */  // TODO!!!!
+	/*!< configure domain pre-scalars */
 	RCC->D1CFGR = (
-			0
+			(config->SYS_CLK_prescaler << RCC_D1CFGR_D1CPRE_Pos)			|
+			(config->APB3_prescaler << RCC_D1CFGR_D1PPRE_Pos)				|
+			(config->AHB_prescaler << RCC_D1CFGR_HPRE_Pos)
 	);
 	RCC->D2CFGR = (
-			0
+			(config->APB2_prescaler << RCC_D2CFGR_D2PPRE2_Pos)				|
+			(config->APB1_prescaler << RCC_D2CFGR_D2PPRE1_Pos)
 	);
-	RCC->D3CFGR = (
-			0
-	);
-	/*!< configure peripheral kernel clocks */
+	RCC->D3CFGR = (config->APB4_prescaler << RCC_D3CFGR_D3PPRE_Pos);
+	/*!< configure peripheral kernel clocks */  // TODO: !!!!!!
 	RCC->D1CCIPR = (
-			0
+			(config->PER_src << RCC_D1CCIPR_CKPERSEL_Pos)					|
+			(config->SDMMC_CLK_src << RCC_D1CCIPR_SDMMCSEL_Pos)				|
+			(config->QSPI_CLK_src << RCC_D1CCIPR_QSPISEL_Pos)				|
+			(config->FMC_CLK_src << RCC_D1CCIPR_FMCSEL_Pos)
 	);
 	RCC->D2CCIP1R = (
-			0
+			(config->SWPMI_CLK_src << RCC_D2CCIP1R_SWPSEL_Pos)				|
+			(config->FDCAN_CLK_src << RCC_D2CCIP1R_FDCANSEL_Pos)			|
+			(config->DFSDM1_CLK_src << RCC_D2CCIP1R_DFSDM1SEL_Pos)			|
+			(config->SPDIFRX_CLK_src << RCC_D2CCIP1R_SPDIFSEL_Pos)			|
+			(config->SPI45_CLK_src << RCC_D2CCIP1R_SPI45SEL_Pos)			|
+			(config->SPI123_CLK_src << RCC_D2CCIP1R_SPI123SEL_Pos)			|
+			(config->SAI23_CLK_src << RCC_D2CCIP1R_SAI23SEL_Pos)			|
+			(config->SAI1_CLK_src << RCC_D2CCIP1R_SAI1SEL_Pos)
 	);
 	RCC->D2CCIP2R = (
-			0
+			(config->LPTIM1_CLK_src << RCC_D2CCIP2R_LPTIM1SEL_Pos)			|
+			(config->HDMI_CEC_CLK_src << RCC_D2CCIP2R_CECSEL_Pos)			|
+			(config->USB_OTG12_CLK_src << RCC_D2CCIP2R_USBSEL_Pos)			|
+			(config->I2C123_CLK_src << RCC_D2CCIP2R_I2C123SEL_Pos)			|
+			(config->RNG_CLK_src << RCC_D2CCIP2R_RNGSEL_Pos)				|
+			(config->USART16_CLK_src << RCC_D2CCIP2R_USART16SEL_Pos)		|
+			(config->USART234578_CLK_src << RCC_D2CCIP2R_USART28SEL_Pos)
 	);
 	RCC->D3CCIPR = (
-			0
+			(config->SPI6_CLK_src << RCC_D3CCIPR_SPI6SEL_Pos)				|
+			(config->SAI4B_CLK_src << RCC_D3CCIPR_SAI4BSEL_Pos)				|
+			(config->SAI4A_CLK_src << RCC_D3CCIPR_SAI4ASEL_Pos)				|
+			(config->SAR_ADC_CLK_src << RCC_D3CCIPR_ADCSEL_Pos)				|
+			(config->LPTIM345_CLK_src << RCC_D3CCIPR_LPTIM345SEL_Pos)		|
+			(config->LPTIM2_CLK_src << RCC_D3CCIPR_LPTIM2SEL_Pos)			|
+			(config->I2C4_CLK_src << RCC_D3CCIPR_I2C4SEL_Pos)				|
+			(config->LPUART1_CLK_src << RCC_D3CCIPR_LPUART1SEL_Pos)
 	);
 	/*!< enable clocks */
 	RCC->CSR = (config->LSI_enable << RCC_CSR_LSION_Pos);
@@ -205,5 +229,14 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	);
 	while ((RCC->CFGR & RCC_CFGR_SWS) != (config->SYS_CLK_src << RCC_CFGR_SWS_Pos));	// wait until the sys clock is switched
 
-	// TODO: peripheral clocks (D1CKRDY, D2CKRDY)
+
+	/* configure SysTick timer. By default the clock source of SysTick is AHB/8 */
+	SysTick->LOAD = (AHB_clock_frequency / 8000) - 1;						/* set reload register */
+	SysTick->VAL  = 0;														/* load counter value  */
+	SysTick->CTRL = (														/* start SysTick timer */
+			(SysTick_CTRL_ENABLE_Msk * config->SYS_tick_enable)				|
+			(SysTick_CTRL_TICKINT_Msk * config->SYS_tick_interrupt_enable)
+	);
+	// set IRQ priority
+	//SCB->SHP[(SysTick_IRQn & 0xFUL) - 4UL] = ((((1UL << __NVIC_PRIO_BITS) - 1UL) << (8U - __NVIC_PRIO_BITS)) & 0xFFUL);
 }

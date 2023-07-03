@@ -321,6 +321,32 @@ typedef enum {
 } LPUART1_CLK_SRC_t;	// 3 bit
 
 
+/*!< Systick */
+typedef enum {	// R?
+	SYSTICK_CLK_SRC_CPU_DIV_1 =		0b0,
+	SYSTICK_CLK_SRC_CPU_DIV_8 =		0b1
+} SYSTICK_CLK_SRC_t;	// 1 bit
+
+
+/*!< MCO */
+typedef enum {
+	MCO2_CLK_SRC_SYS =				0b000,	//R
+	MCO2_CLK_SRC_PLL2_P =			0b001,
+	MCO2_CLK_SRC_HSE =				0b010,
+	MCO2_CLK_SRC_PLL1_P =			0b011,
+	MCO2_CLK_SRC_CSI =				0b100,
+	MCO2_CLK_SRC_LSI =				0b101
+} MCO2_CLK_SRC_t;
+
+typedef enum {
+	MCO1_CLK_SRC_HSI =				0b000,	//R
+	MCO1_CLK_SRC_LSE =				0b001,
+	MCO1_CLK_SRC_HSE =				0b010,
+	MCO1_CLK_SRC_PLL1_Q =			0b011,
+	MCO1_CLK_SRC_HSI48 =			0b100,
+} MCO1_CLK_SRC_t;
+
+
 /*!< config struct */
 typedef struct {
 	// PLL
@@ -388,14 +414,21 @@ typedef struct {
 	uint64_t			SAR_ADC_CLK_src			: 2;	// SAR_ADC_CLK_SRC_t
 	uint64_t			I2C4_CLK_src			: 2;	// I2C4_CLK_SRC_t
 
-	uint64_t			SAI4B_CLK_src			: 3;	// SAI4_CLK_SRC_t
-	uint64_t			SAI4A_CLK_src			: 3;	// SAI4_CLK_SRC_t
-	uint64_t			LPTIM345_CLK_src		: 3;	// LPTIM2345_CLK_SRC_t
-	uint64_t			LPTIM2_CLK_src			: 3;	// LPTIM2345_CLK_SRC_t
-	uint64_t			LPUART1_CLK_src			: 3;	// LPUART1_CLK_SRC_t
+	uint32_t			SAI4B_CLK_src			: 3;	// SAI4_CLK_SRC_t
+	uint32_t			SAI4A_CLK_src			: 3;	// SAI4_CLK_SRC_t
+	uint32_t			LPTIM345_CLK_src		: 3;	// LPTIM2345_CLK_SRC_t
+	uint32_t			LPTIM2_CLK_src			: 3;	// LPTIM2345_CLK_SRC_t
+	uint32_t			LPUART1_CLK_src			: 3;	// LPUART1_CLK_SRC_t
 	// Systick
-
-} SYS_CLK_Config_t;		// 335 bit
+	uint32_t			SYSTICK_enable			: 1;
+	uint32_t			SYSTICK_IRQ_enable		: 1;
+	uint32_t			SYSTICK_CLK_src			: 1;	// SYSTICK_CLK_SRC_t
+	// MCO
+	uint32_t			MCO2_CLK_src			: 3;	// MCO2_CLK_SRC_t
+	uint32_t			MCO2_CLK_prescaler		: 4;
+	uint32_t			MCO1_CLK_src			: 3;	// MCO1_CLK_SRC_t
+	uint32_t			MCO1_CLK_prescaler		: 4;
+} SYS_CLK_Config_t;		// 352 bit -> 44 byte
 
 
 /*!< constants */

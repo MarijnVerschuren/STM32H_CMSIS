@@ -221,7 +221,12 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	);
 	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled clocks are ready
 
+	/*!< switch sys-clock */
 	RCC->CFGR = (
+			(config->MCO2_CLK_src << RCC_CFGR_MCO2_Pos)						|
+			(config->MCO2_CLK_prescaler << RCC_CFGR_MCO2PRE_Pos)			|
+			(config->MCO1_CLK_src << RCC_CFGR_MCO1_Pos)						|
+			(config->MCO1_CLK_prescaler << RCC_CFGR_MCO1PRE_Pos)			|
 			(config->TIM_prescaler << RCC_CFGR_TIMPRE_Pos)					|
 			(config->HRTIM_src << RCC_CFGR_HRTIMSEL_Pos)					|
 			(config->RTC_HSE_prescaler << RCC_CFGR_RTCPRE_Pos)				|
@@ -229,14 +234,13 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	);
 	while ((RCC->CFGR & RCC_CFGR_SWS) != (config->SYS_CLK_src << RCC_CFGR_SWS_Pos));	// wait until the sys clock is switched
 
-
-	/* configure SysTick timer. By default the clock source of SysTick is AHB/8 */
-	SysTick->LOAD = (AHB_clock_frequency / 8000) - 1;						/* set reload register */
-	SysTick->VAL  = 0;														/* load counter value  */
-	SysTick->CTRL = (														/* start SysTick timer */
-			(SysTick_CTRL_ENABLE_Msk * config->SYS_tick_enable)				|
-			(SysTick_CTRL_TICKINT_Msk * config->SYS_tick_interrupt_enable)
+	/*!< enable sys-tick */
+	SysTick->LOAD = ((SYS_clock_frequency / (1 + (7 * config->SYSTICK_CLK_src))) / 1000) - 1;
+	SysTick->VAL  = 0;
+	SysTick->CTRL = (
+			(config->SYSTICK_enable << SysTick_CTRL_ENABLE_Pos)				|
+			(config->SYSTICK_IRQ_enable << SysTick_CTRL_TICKINT_Pos)		|
+			(config->SYSTICK_CLK_src << SysTick_CTRL_CLKSOURCE_Pos)
 	);
-	// set IRQ priority
-	//SCB->SHP[(SysTick_IRQn & 0xFUL) - 4UL] = ((((1UL << __NVIC_PRIO_BITS) - 1UL) << (8U - __NVIC_PRIO_BITS)) & 0xFFUL);
+	if (config->SYSTICK_IRQ_enable) { SCB->SHPR[(SysTick_IRQn & 0xFUL) - 4UL] = 0xF0UL; }	// set SysTick irq priority
 }

@@ -1,5 +1,6 @@
 # TODO
 >### Very High Priority
+>* VOS is not applied!!
 >* Create basic functionality (GPIO, EXTI, TIM, SYS_CFG)
 
 >### High Priority
@@ -22,3 +23,6 @@
 >* oscillator drive?
 >* (clock) Domains
 >* kernel and "per" clocks
+
+>### Test
+>* test if LSE and RTC enable need to be split

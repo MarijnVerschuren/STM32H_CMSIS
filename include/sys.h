@@ -95,6 +95,14 @@ typedef enum {
 } SYS_CLK_PRE_t;		// 4 bit
 
 
+/*!< PWR */
+typedef enum {
+	CORE_VOS_3 =					0b01,	//R
+	CORE_VOS_2 =					0b10,
+	CORE_VOS_1 =					0b11
+} CORE_VOS_t;
+
+
 /*!< FLASH */
 typedef enum {
 	//================================================================================================================|
@@ -108,17 +116,6 @@ typedef enum {
 	FLASH_LATENCY4 =         0b100,  //   180 < AXI ≤ 225  * 225 < AXI ≤ 240    225 < AXI ≤ 240    225 < AXI ≤ 240    |
 	//================================================================================================================|
 } FLASH_LATENCY_t;		// 3 bit
-
-typedef enum {
-	//================================================================================================================|
-	// flash access latency |                                         AXI_freq (MHz)                                  |
-	//     (table 17)       |                   VOS3               VOS2               VOS1            VOS0 (boot)     |
-	//    in AXI cycles     |_________     0.95V - 1.05V      1.05V - 1.15V      1.15V - 1.26V      1.26V - 1.40V     |
-	FLASH_PROG_DELAY0 =      0b00,  //     0 < AXI ≤ 45       0 < AXI ≤ 55       0 < AXI ≤ 70       0 < AXI ≤ 70      |
-	FLASH_PROG_DELAY1 =      0b01,  //    45 < AXI ≤ 135     55 < AXI ≤ 165     70 < AXI ≤ 185     70 < AXI ≤ 185     |
-	FLASH_PROG_DELAY2 =      0b10,  //   135 < AXI ≤ 225    165 < AXI ≤ 225    185 < AXI ≤ 225    185 < AXI ≤ 240     |
-	//================================================================================================================|
-} FLASH_PROG_DELAY_t;	// 2 bit
 
 
 /*!< AHB/APB */
@@ -380,8 +377,9 @@ typedef struct {
 	// SYS
 	uint64_t			SYS_CLK_src				: 2;	// SYS_CLK_SRC_t
 	uint64_t			SYS_CLK_prescaler		: 4;	// SYS_CLK_PRE_t
+	// PWR
+	uint64_t			CORE_VOS_level			: 2;	// CORE_VOS_t
 	// FLASH
-	uint64_t			FLASH_program_delay		: 2;	// FLASH_PROG_DELAY_t
 	uint64_t			FLASH_latency			: 4;	// FLASH_LATENCY_t
 	// Domains
 	uint64_t			APB3_prescaler			: 3;	// APB_CLK_PRE_t	domain 1
@@ -482,11 +480,11 @@ void set_clock_config(
 	uint8_t LSI_enable,						uint8_t LSE_enable,						uint8_t CSI_enable,
 	uint8_t HSI48_enable,					uint8_t HSI_enable_stop_mode,			uint8_t CSI_enable_stop_mode,
 	uint8_t HSE_CSS_enable,					uint8_t LSE_CSS_enable,					HSI_DIV_t HSI_div,
-	uint32_t HSE_freq
+	uint32_t HSE_freq,						PLL_SRC_t PLL_src
 );
 void set_SYS_config(
 	SYS_CLK_Config_t* config,				SYS_CLK_SRC_t SYS_CLK_src,				SYS_CLK_PRE_t SYS_CLK_prescaler,
-	FLASH_LATENCY_t FLASH_latency,			FLASH_PROG_DELAY_t FLASH_program_delay
+	CORE_VOS_t CORE_VOS_level,				FLASH_LATENCY_t FLASH_latency
 );
 void set_domain_config(
 	SYS_CLK_Config_t* config,				AHB_CLK_PRE_t AHB_prescaler,			APB_CLK_PRE_t APB1_prescaler,
@@ -505,6 +503,7 @@ void set_MCO_config(
 
 /*!< setup functions */
 void IRQ_callback_init(IRQ_callback_t sys_tick_callback, IRQ_callback_t clock_fault_callback);
+void peripheral_kernel_clock_init(SYS_CLK_Config_t* config);  // set peripherals kernel clock config
 void sys_clock_init(SYS_CLK_Config_t* config);
 
 

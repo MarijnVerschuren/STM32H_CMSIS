@@ -8,6 +8,7 @@ SYS_CLK_Config_t* sys_config;
 
 
 int main(void) {
+	// clock config
 	sys_config = new_SYS_CLK_config();
 	set_PLL_config(
 			&sys_config->PLL1_config, 1, 1, 1, 0, 0,		// enable PLL1 (P, Q)
@@ -39,7 +40,7 @@ int main(void) {
 			APB_CLK_DIV_2, APB_CLK_DIV_2, APB_CLK_DIV_2		// APB1-4 = 100MHz
 	);
 	set_systick_config(
-			sys_config, 1, 1, SYSTICK_CLK_SRC_CPU_DIV_1		// SysTick (IRQ) enable at 400MHz
+			sys_config, 1, 1, SYSTICK_CLK_SRC_AXI_CLK_DIV_1	// SysTick (IRQ) enable at 200MHz
 	);
 	set_MCO_config(
 			sys_config, MCO1_CLK_SRC_PLL1_Q, 1,				// output PLL1_Q	(50MHz)
@@ -47,9 +48,30 @@ int main(void) {
 	);
 	sys_clock_init(sys_config);
 
+	// debug
+	(void)HSI_clock_frequency;
+	(void)HSE_clock_frequency;
+	(void)PLL1_P_clock_frequency;
+	(void)PLL1_Q_clock_frequency;
+	(void)PLL1_R_clock_frequency;
+	(void)PLL2_P_clock_frequency;
+	(void)PLL2_Q_clock_frequency;
+	(void)PLL2_R_clock_frequency;
+	(void)AHB_clock_frequency;
+	(void)APB1_clock_frequency;
+	(void)APB2_clock_frequency;
+	(void)APB3_clock_frequency;
+	(void)APB4_clock_frequency;
+	(void)SYS_clock_frequency;
 
+	// GPIO config
+	config_GPIO(GPIOE, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);
+
+
+	// main loop
 	for(;;) {
-		__NOP();
+		GPIO_toggle(GPIOE, 1);
+		delay_ms(100);
 	}
 }
 #endif

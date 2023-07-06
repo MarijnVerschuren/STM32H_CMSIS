@@ -5,18 +5,24 @@
 #include "sys.h"
 
 
-/*!< static variables */
+/*!<
+ * static variables
+ * */
 static IRQ_callback_t	sys_tick_func =		NULL;
 static IRQ_callback_t	clock_fault_func =	NULL;
 
 
-/*!< constants */
+/*!<
+ * constants
+ * */
 const uint32_t LSI_clock_frequency = 32768;
 const uint32_t LSE_clock_frequency = 32768;
 const uint32_t CSI_clock_frequency = 4000000;
 
 
-/*!< variables */  // values are updated when calling sys_clock_init
+/*!<
+ * variables
+ * */
 uint32_t HSI_clock_frequency = 64000000;	// HSI is 64 MHz by default
 uint32_t HSE_clock_frequency = 0;			// HSE is within [4, 48] MHz
 uint32_t PLL1_P_clock_frequency = 0;
@@ -39,7 +45,9 @@ uint32_t SYS_clock_frequency = 64000000;
 volatile uint64_t tick = 0;  // updated with sys_tick
 
 
-/*!< interrupts */
+/*!<
+ * interrupts
+ * */
 extern void SysTick_Handler(void) { tick++; if (sys_tick_func) { sys_tick_func(); } }
 extern void RCC_IRQHandler(void) {
 	if (!(RCC->CIFR & (RCC_CIFR_HSECSSF | RCC_CIFR_LSECSSF))) { RCC->CICR = 0x1FFUL; return; }
@@ -48,10 +56,12 @@ extern void RCC_IRQHandler(void) {
 }
 
 
-/*!< config functions */
+/*!<
+ * config functions
+ * */
 SYS_CLK_Config_t* new_SYS_CLK_config(void) {
 	SYS_CLK_Config_t* config = malloc(sizeof(SYS_CLK_Config_t));
-	for (uint8_t i = 0; i < 11; i++) { ((uint32_t*)config)[i] = 0x00000000UL; }
+	for (uint8_t i = 0; i < sizeof(SYS_CLK_Config_t); i++) { ((uint8_t*)config)[i] = 0x00UL; }
 	// set default settings
 	config->HSI_enable = 1;
 	config->PLL3_config.M_factor = config->PLL2_config.M_factor = config->PLL1_config.M_factor = 0x20UL;
@@ -80,10 +90,10 @@ void set_PLL_config(
 	config->input_range =	input_range;
 	config->VCO_range =		VCO_range;
 	config->M_factor =		M_factor;
-	config->P_factor =		P_factor ? P_factor - 1 : 0;
-	config->Q_factor =		Q_factor ? Q_factor - 1 : 0;
-	config->R_factor =		R_factor ? R_factor - 1 : 0;
-	config->N_factor =		N_factor ? N_factor - 1 : 0;
+	config->P_factor =		P_factor ? P_factor - 1 : 0b0UL;
+	config->Q_factor =		Q_factor ? Q_factor - 1 : 0b0UL;
+	config->R_factor =		R_factor ? R_factor - 1 : 0b0UL;
+	config->N_factor =		N_factor ? N_factor - 1 : 0b0UL;
 	config->N_fraction =	N_fraction;
 }
 
@@ -159,14 +169,16 @@ void set_MCO_config(
 }
 
 
-/*!< setup functions */
+/*!<
+ * init
+ * */
 void IRQ_callback_init(IRQ_callback_t sys_tick_callback, IRQ_callback_t clock_fault_callback) {
 	sys_tick_func =		sys_tick_callback;
 	clock_fault_func =	clock_fault_callback;
 }
 
 void peripheral_kernel_clock_init(SYS_CLK_Config_t* config) {
-	/*!< configure peripheral kernel clocks */
+	//!< configure peripheral kernel clocks
 	RCC->D1CCIPR = (
 			(config->PER_src << RCC_D1CCIPR_CKPERSEL_Pos)					|
 			(config->SDMMC_CLK_src << RCC_D1CCIPR_SDMMCSEL_Pos)				|
@@ -209,16 +221,16 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	uint32_t PLL1_freq, PLL2_freq, PLL3_freq;
 	uint32_t clock_ready_mask;
 	uint32_t tmp_reg;
-	/*!< update base clock frequency variables */
+	//!< update base clock frequency variables
 	HSE_clock_frequency = config->HSE_freq;
-	HSI_clock_frequency /= (1 << config->HSI_div);
-	/*!< check if current VOS level is stable */
+	HSI_clock_frequency /= (0b1UL << config->HSI_div);
+	//!< check if current VOS level is stable
 	while (!(PWR->D3CR & PWR_D3CR_VOSRDY));
-	/*!< configure CORE voltage scaling */
+	//!< configure CORE voltage scaling
 	PWR->CR3 |= PWR_CR3_BYPASS;
 	PWR->D3CR |= (config->CORE_VOS_level << PWR_D3CR_VOS_Pos);
 	while ((PWR->CSR1 & PWR_CSR1_ACTVOS) != (config->CORE_VOS_level << PWR_CSR1_ACTVOS_Pos));  // wait until the power scaling level is applied
-	/*!< enable base clocks */
+	//!< enable base clocks
 	RCC->CR = (  // HSI is left on
 			// enable clocks
 			(config->HSE_enable << RCC_CR_HSEON_Pos)						|
@@ -238,11 +250,11 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)
 	);
 	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled basic clocks are ready
-	/*!< disable PLL clocks before configuring */
+	//!< disable PLL clocks before configuring
 	if (RCC->CR & RCC_CR_PLL3ON) { RCC->CR &= ~RCC_CR_PLL3ON; while (RCC->CR & RCC_CR_PLL3RDY); }
 	if (RCC->CR & RCC_CR_PLL2ON) { RCC->CR &= ~RCC_CR_PLL2ON; while (RCC->CR & RCC_CR_PLL2RDY); }
 	if (RCC->CR & RCC_CR_PLL1ON) { RCC->CR &= ~RCC_CR_PLL1ON; while (RCC->CR & RCC_CR_PLL1RDY); }
-	/*!< configure PLL clocks */
+	//!< configure PLL clocks
 	RCC->PLLCKSELR = (  // PLL clock source and prescalers (PLL input settings)
 			(config->PLL3_config.M_factor << RCC_PLLCKSELR_DIVM3_Pos)		|
 			(config->PLL2_config.M_factor << RCC_PLLCKSELR_DIVM2_Pos)		|
@@ -293,31 +305,31 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			(config->PLL3_config.N_factor << RCC_PLL3DIVR_N3_Pos)
 	);
 	RCC->PLL3FRACR = (config->PLL3_config.N_fraction << RCC_PLL3FRACR_FRACN3_Pos);
-	/*!< update PLL frequency variables */
+	//!< update PLL frequency variables
 	switch (config->PLL_src) {
 		case PLL_SRC_HSI: PLL_src_freq = HSI_clock_frequency; break;
 		case PLL_SRC_CSI: PLL_src_freq = CSI_clock_frequency; break;
 		case PLL_SRC_HSE: PLL_src_freq = HSE_clock_frequency; break;
 	}
-	PLL1_freq = PLL_src_freq * config->PLL1_config.N_factor;
-	PLL2_freq = PLL_src_freq * config->PLL2_config.N_factor;
-	PLL3_freq = PLL_src_freq * config->PLL3_config.N_factor;
-	if (config->PLL1_config.P_enable) { PLL1_P_clock_frequency = PLL1_freq / config->PLL1_config.P_factor; }
-	if (config->PLL1_config.Q_enable) { PLL1_Q_clock_frequency = PLL1_freq / config->PLL1_config.Q_factor; }
-	if (config->PLL1_config.R_enable) { PLL1_R_clock_frequency = PLL1_freq / config->PLL1_config.R_factor; }
-	if (config->PLL2_config.P_enable) { PLL2_P_clock_frequency = PLL2_freq / config->PLL2_config.P_factor; }
-	if (config->PLL2_config.Q_enable) { PLL2_Q_clock_frequency = PLL2_freq / config->PLL2_config.Q_factor; }
-	if (config->PLL2_config.R_enable) { PLL2_R_clock_frequency = PLL2_freq / config->PLL2_config.R_factor; }
-	if (config->PLL3_config.P_enable) { PLL3_P_clock_frequency = PLL3_freq / config->PLL3_config.P_factor; }
-	if (config->PLL3_config.Q_enable) { PLL3_Q_clock_frequency = PLL3_freq / config->PLL3_config.Q_factor; }
-	if (config->PLL3_config.R_enable) { PLL3_R_clock_frequency = PLL3_freq / config->PLL3_config.R_factor; }
+	PLL1_freq = PLL_src_freq * (config->PLL1_config.N_factor + 1);
+	PLL2_freq = PLL_src_freq * (config->PLL2_config.N_factor + 1);
+	PLL3_freq = PLL_src_freq * (config->PLL3_config.N_factor + 1);
+	if (config->PLL1_config.P_enable) { PLL1_P_clock_frequency = PLL1_freq / (config->PLL1_config.P_factor + 1); }
+	if (config->PLL1_config.Q_enable) { PLL1_Q_clock_frequency = PLL1_freq / (config->PLL1_config.Q_factor + 1); }
+	if (config->PLL1_config.R_enable) { PLL1_R_clock_frequency = PLL1_freq / (config->PLL1_config.R_factor + 1); }
+	if (config->PLL2_config.P_enable) { PLL2_P_clock_frequency = PLL2_freq / (config->PLL2_config.P_factor + 1); }
+	if (config->PLL2_config.Q_enable) { PLL2_Q_clock_frequency = PLL2_freq / (config->PLL2_config.Q_factor + 1); }
+	if (config->PLL2_config.R_enable) { PLL2_R_clock_frequency = PLL2_freq / (config->PLL2_config.R_factor + 1); }
+	if (config->PLL3_config.P_enable) { PLL3_P_clock_frequency = PLL3_freq / (config->PLL3_config.P_factor + 1); }
+	if (config->PLL3_config.Q_enable) { PLL3_Q_clock_frequency = PLL3_freq / (config->PLL3_config.Q_factor + 1); }
+	if (config->PLL3_config.R_enable) { PLL3_R_clock_frequency = PLL3_freq / (config->PLL3_config.R_factor + 1); }
 	switch (config->SYS_CLK_src) {
 		case SYS_CLK_SRC_HSI: SYS_clock_frequency = HSI_clock_frequency; break;
 		case SYS_CLK_SRC_CSI: SYS_clock_frequency = CSI_clock_frequency; break;
 		case SYS_CLK_SRC_HSE: SYS_clock_frequency = HSE_clock_frequency; break;
 		case SYS_CLK_SRC_PLL1_P: SYS_clock_frequency = PLL1_P_clock_frequency; break;
 	}
-	/*!< enable PLL clocks */
+	//!< enable PLL clocks
 	RCC->CR |= (
 			(config->PLL3_config.enable << RCC_CR_PLL3ON_Pos)				|
 			(config->PLL2_config.enable << RCC_CR_PLL2ON_Pos)				|
@@ -329,7 +341,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			(config->PLL1_config.enable << RCC_CR_PLL1RDY_Pos)
 	);
 	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled PLL clocks are ready
-	/*!< configure domain pre-scalars */
+	//!< configure domain pre-scalars
 	RCC->D1CFGR = (
 			(config->SYS_CLK_prescaler << RCC_D1CFGR_D1CPRE_Pos)			|
 			(config->APB3_prescaler << RCC_D1CFGR_D1PPRE_Pos)				|
@@ -340,7 +352,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			(config->APB1_prescaler << RCC_D2CFGR_D2PPRE1_Pos)
 	);
 	RCC->D3CFGR = (config->APB4_prescaler << RCC_D3CFGR_D3PPRE_Pos);
-	/*!< update frequency variables */
+	//!< update frequency variables
 	if (config->SYS_CLK_prescaler & 0x8UL) {
 		if (config->SYS_CLK_prescaler & 0x4UL)	{ SYS_clock_frequency /= 0x4UL << (config->SYS_CLK_prescaler & 0x7UL); }
 		else									{ SYS_clock_frequency /= 0x2UL << (config->SYS_CLK_prescaler & 0x7UL); }
@@ -353,10 +365,10 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	if (config->APB2_prescaler & 0x4UL)			{ APB2_clock_frequency = AHB_clock_frequency / (0x2UL << (config->APB2_prescaler & 0x3UL)); }
 	if (config->APB1_prescaler & 0x4UL)			{ APB1_clock_frequency = AHB_clock_frequency / (0x2UL << (config->APB1_prescaler & 0x3UL)); }
 	if (config->APB4_prescaler & 0x4UL)			{ APB4_clock_frequency = AHB_clock_frequency / (0x2UL << (config->APB4_prescaler & 0x3UL)); }
-	/*!< configure flash */
+	//!< configure flash
 	FLASH->ACR &= ~FLASH_ACR_LATENCY;
 	FLASH->ACR |= (config->FLASH_latency << FLASH_ACR_LATENCY_Pos);
-	/*!< switch sys-clock */
+	//!< switch sys-clock
 	RCC->CFGR = (
 			(config->MCO2_CLK_src << RCC_CFGR_MCO2_Pos)						|
 			(config->MCO2_CLK_prescaler << RCC_CFGR_MCO2PRE_Pos)			|
@@ -371,7 +383,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	tmp_reg = RCC->CR; tmp_reg &= !RCC_CR_HSION;
 	tmp_reg |= config->HSI_enable << RCC_CR_HSION_Pos;
 	RCC->CR = tmp_reg;
-	/*!< RTC config / enable */
+	//!< configure RTC
 	RCC->CSR = (config->LSI_enable << RCC_CSR_LSION_Pos);
 	while ((RCC->CSR & RCC_CSR_LSIRDY) != (config->LSI_enable << RCC_CSR_LSIRDY_Pos));
 	RCC->BDCR = (
@@ -382,7 +394,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	);
 	while ((RCC->BDCR & RCC_BDCR_LSERDY) != (config->LSE_enable << RCC_BDCR_LSERDY_Pos));
 	RCC->CIER = (config->LSE_CSS_enable << RCC_CIER_LSECSSIE_Pos);
-	/*!< update RTC frequency variables */
+	//!< update RTC frequency variables
 	switch (config->RTC_src) {
 		case RTC_SRC_LSE:	RTC_clock_frequency = LSI_clock_frequency; break;
 		case RTC_SRC_LSI:	RTC_clock_frequency = LSE_clock_frequency; break;
@@ -391,8 +403,8 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 			RTC_clock_frequency = HSE_clock_frequency / config->RTC_HSE_prescaler; break;
 		default:			RTC_clock_frequency = 0; break;
 	}
-	/*!< enable sys-tick */
-	SysTick->LOAD = ((SYS_clock_frequency / (1 + (7 * config->SYSTICK_CLK_src))) / 1000) - 1;
+	//!< configure sys-tick
+	SysTick->LOAD = ((SYS_clock_frequency / (8 - (7 * config->SYSTICK_CLK_src))) / 2000) + 1;
 	SysTick->VAL  = 0;
 	SysTick->CTRL = (
 			(config->SYSTICK_enable << SysTick_CTRL_ENABLE_Pos)				|
@@ -405,7 +417,9 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 }
 
 
-/*!< misc */
+/*!<
+ * misc
+ * */
 void delay_ms(uint64_t ms) {
 	uint64_t start = tick;
 	while ((tick - start) < ms);

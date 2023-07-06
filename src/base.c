@@ -5,7 +5,9 @@
 #include "base.h"
 
 
-/*!< device */
+/*!<
+ * device
+ * */
 dev_id_t dev_to_id(void* dev) {
 	if ((uint32_t)dev < APB1_BASE)		{ return (dev_id_t){0, DEV_CLOCK_NONE}; }
 	if ((uint32_t)dev < APB2_BASE)		{ return (dev_id_t){((uint32_t)dev - APB1_BASE) >> 10u, DEV_CLOCK_ID_APB1}; }
@@ -30,7 +32,9 @@ void* id_to_dev(dev_id_t id) {
 }
 
 
-/*!< buffer */
+/*!<
+ * buffer
+ * */
 io_buffer_t* new_buffer(uint32_t size) {
 	io_buffer_t* buf = malloc(sizeof(io_buffer_t));
 	if (!buf) { return NULL; }		// struct allocation error

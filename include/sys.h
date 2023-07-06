@@ -8,7 +8,9 @@
 #include "main.h"
 
 
-/*!< types */
+/*!<
+ * types
+ * */
 typedef struct {
 	uint32_t ID0;
 	uint32_t ID1;
@@ -19,7 +21,7 @@ typedef struct {
 typedef void(*IRQ_callback_t)(void);
 
 
-/*!< PLL */
+//!< PLL
 typedef enum {
 	PLL_IN_1MHz_2MHz =				0b00,	//R	// 1 MHz < CLK_IN < 2 MHz
 	PLL_IN_2MHz_4MHz =				0b01,		// 2 MHz < CLK_IN < 4 MHz
@@ -56,7 +58,7 @@ typedef struct {
 } PLL_CLK_Config_t;		// 64 bit (8 bit reserved)
 
 
-/*!< RTC */
+//!< RTC
 typedef enum {
 	RCC_SRC_DISABLED =				0b00,	//R
 	RTC_SRC_LSE =					0b01,
@@ -65,7 +67,7 @@ typedef enum {
 } RTC_SRC_t;			// 2 bit
 
 
-/*!< HSI */
+//!< HSI
 typedef enum {
 	HSI_DIV_1 = 					0b00,	//R	// 64 MHz
 	HSI_DIV_2 = 					0b01,		// 32 MHz
@@ -74,7 +76,7 @@ typedef enum {
 } HSI_DIV_t;			// 2 bit
 
 
-/*!< SYS */
+//!< SYS
 typedef enum {
 	SYS_CLK_SRC_HSI =				0b00,	//R
 	SYS_CLK_SRC_CSI =				0b01,
@@ -95,7 +97,7 @@ typedef enum {
 } SYS_CLK_PRE_t;		// 4 bit
 
 
-/*!< PWR */
+//!< PWR
 typedef enum {
 	CORE_VOS_3 =					0b01,	//R
 	CORE_VOS_2 =					0b10,
@@ -103,7 +105,7 @@ typedef enum {
 } CORE_VOS_t;
 
 
-/*!< FLASH */
+//!< FLASH
 typedef enum {
 	//================================================================================================================|
 	// flash access latency | (* non documented)                      AXI_freq (MHz)                                  |
@@ -118,7 +120,7 @@ typedef enum {
 } FLASH_LATENCY_t;		// 3 bit
 
 
-/*!< AHB/APB */
+//!< AHB/APB
 typedef enum {
 	AHB_CLK_DIV_1 =					0b0000,	//R	// 0xxx
 	AHB_CLK_DIV_2 =					0b1000,
@@ -140,7 +142,7 @@ typedef enum {
 } APB_CLK_PRE_t;		// 3 bit
 
 
-/*!< PERIPHERALS */
+//!< PERIPHERALS
 typedef enum {
 	TIM_DIV_2 =						0b0,	//R	// rcc_hclk1 if D2PPREx is 1 or 2 else 2 x rcc_plckx_d2
 	TIM_DIV_4 =						0b1			// rcc_hclk1 if D2PPREx is 1, 2 or 4 else 4 x rcc_plckx_d2
@@ -319,14 +321,14 @@ typedef enum {
 } LPUART1_CLK_SRC_t;	// 3 bit
 
 
-/*!< Systick */
-typedef enum {	// R?
-	SYSTICK_CLK_SRC_CPU_DIV_1 =		0b0,
-	SYSTICK_CLK_SRC_CPU_DIV_8 =		0b1
+//!< SysTick
+typedef enum {
+	SYSTICK_CLK_SRC_AXI_CLK_DIV_8 =	0b0,	//R
+	SYSTICK_CLK_SRC_AXI_CLK_DIV_1 =	0b1
 } SYSTICK_CLK_SRC_t;	// 1 bit
 
 
-/*!< MCO */
+//!< MCO
 typedef enum {
 	MCO2_CLK_SRC_SYS =				0b000,	//R
 	MCO2_CLK_SRC_PLL2_P =			0b001,
@@ -345,7 +347,7 @@ typedef enum {
 } MCO1_CLK_SRC_t;		// 3 bit
 
 
-/*!< config struct */
+//!< config struct
 typedef struct {
 	// PLL
 	PLL_CLK_Config_t	PLL1_config;
@@ -429,13 +431,17 @@ typedef struct {
 } SYS_CLK_Config_t;		// 352 bit -> 44 byte
 
 
-/*!< constants */
+/*!<
+ * constants
+ * */
 extern const uint32_t LSI_clock_frequency;
 extern const uint32_t LSE_clock_frequency;
 extern const uint32_t CSI_clock_frequency;
 
 
-/*!< variables */  // values are updated when calling sys_clock_init
+/*!<
+ * variables
+ * */
 extern uint32_t HSI_clock_frequency;
 extern uint32_t HSE_clock_frequency;
 extern uint32_t PLL1_P_clock_frequency;
@@ -457,12 +463,16 @@ extern uint32_t SYS_clock_frequency;
 extern volatile uint64_t tick;  // updated with sys_tick
 
 
-/*!< interrupts */
+/*!<
+ * interrupts
+ * */
 extern void SysTick_Handler(void);
 extern void RCC_IRQHandler(void);
 
 
-/*!< config functions */
+/*!<
+ * config functions
+ * */
 SYS_CLK_Config_t* new_SYS_CLK_config(void);
 void set_PLL_config(
 	PLL_CLK_Config_t* config,				uint8_t enable,							uint8_t P_enable,
@@ -501,13 +511,17 @@ void set_MCO_config(
 // TODO: peripheral kernel clocks
 
 
-/*!< setup functions */
+/*!<
+ * init
+ * */
 void IRQ_callback_init(IRQ_callback_t sys_tick_callback, IRQ_callback_t clock_fault_callback);
 void peripheral_kernel_clock_init(SYS_CLK_Config_t* config);  // set peripherals kernel clock config
 void sys_clock_init(SYS_CLK_Config_t* config);
 
 
-/*!< misc */
+/*!<
+ * misc
+ * */
 void delay_ms(uint64_t ms);
 
 

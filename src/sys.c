@@ -212,6 +212,12 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	/*!< update base clock frequency variables */
 	HSE_clock_frequency = config->HSE_freq;
 	HSI_clock_frequency /= (1 << config->HSI_div);
+	/*!< check if current VOS level is stable */
+	while (!(PWR->D3CR & PWR_D3CR_VOSRDY));
+	/*!< configure CORE voltage scaling */
+	PWR->CR3 |= PWR_CR3_BYPASS;
+	PWR->D3CR |= (config->CORE_VOS_level << PWR_D3CR_VOS_Pos);
+	while ((PWR->CSR1 & PWR_CSR1_ACTVOS) != (config->CORE_VOS_level << PWR_CSR1_ACTVOS_Pos));  // wait until the power scaling level is applied
 	/*!< enable base clocks */
 	RCC->CR = (  // HSI is left on
 			// enable clocks
@@ -347,9 +353,6 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	if (config->APB2_prescaler & 0x4UL)			{ APB2_clock_frequency = AHB_clock_frequency / (0x2UL << (config->APB2_prescaler & 0x3UL)); }
 	if (config->APB1_prescaler & 0x4UL)			{ APB1_clock_frequency = AHB_clock_frequency / (0x2UL << (config->APB1_prescaler & 0x3UL)); }
 	if (config->APB4_prescaler & 0x4UL)			{ APB4_clock_frequency = AHB_clock_frequency / (0x2UL << (config->APB4_prescaler & 0x3UL)); }
-	/*!< configure CORE voltage scaling */
-	PWR->D3CR = (config->CORE_VOS_level << PWR_D3CR_VOS_Pos);
-	//while ((PWR->CSR1 & PWR_CSR1_ACTVOS) != (config->CORE_VOS_level << PWR_CSR1_ACTVOS_Pos));  // wait until the power scaling level is applied
 	/*!< configure flash */
 	FLASH->ACR &= ~FLASH_ACR_LATENCY;
 	FLASH->ACR |= (config->FLASH_latency << FLASH_ACR_LATENCY_Pos);

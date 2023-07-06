@@ -1,6 +1,6 @@
 # TODO
 >### Very High Priority
->* VOS is not applied!!
+>* VOS is not applied!! (fixed by setting bypass. ok?)
 >* Create basic functionality (GPIO, EXTI, TIM, SYS_CFG)
 
 >### High Priority
@@ -9,6 +9,7 @@
 
 >### Medium Priority
 >* RTC
+>* Redo sys_clock_init function to allow re-configuration (VOS downscaling etc...)
 
 >### Low Priority
 >* Low power

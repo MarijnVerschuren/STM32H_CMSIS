@@ -1,10 +1,41 @@
 #include "main.h"
 #include "sys.h"
 #include "gpio.h"
+#include "mco.h"
+#include "tim.h"
+#include "exti.h"
 
 
 #if defined(STM32H7xx)
 SYS_CLK_Config_t* sys_config;
+
+/*
+(void)HSI_clock_frequency;
+(void)HSE_clock_frequency;
+(void)PLL1_P_clock_frequency;
+(void)PLL1_Q_clock_frequency;
+(void)PLL1_R_clock_frequency;
+(void)PLL2_P_clock_frequency;
+(void)PLL2_Q_clock_frequency;
+(void)PLL2_R_clock_frequency;
+(void)AHB_clock_frequency;
+(void)APB1_clock_frequency;
+(void)APB2_clock_frequency;
+(void)APB3_clock_frequency;
+(void)APB4_clock_frequency;
+(void)SYS_clock_frequency;
+*/
+
+
+extern void TIM8_UP_TIM13_IRQHandler(void) {
+	TIM8->SR &= ~TIM_SR_UIF;  // clear interrupt flag
+	GPIO_toggle(GPIOE, 1);
+}
+
+extern void EXTI9_5_IRQHandler(void) {
+	EXTI->PR1 |= EXTI_PR1_PR9;  // clear interrupt flag
+	GPIO_toggle(GPIOE, 1);
+}
 
 
 int main(void) {
@@ -48,30 +79,28 @@ int main(void) {
 	);
 	sys_clock_init(sys_config);
 
-	// debug
-	(void)HSI_clock_frequency;
-	(void)HSE_clock_frequency;
-	(void)PLL1_P_clock_frequency;
-	(void)PLL1_Q_clock_frequency;
-	(void)PLL1_R_clock_frequency;
-	(void)PLL2_P_clock_frequency;
-	(void)PLL2_Q_clock_frequency;
-	(void)PLL2_R_clock_frequency;
-	(void)AHB_clock_frequency;
-	(void)APB1_clock_frequency;
-	(void)APB2_clock_frequency;
-	(void)APB3_clock_frequency;
-	(void)APB4_clock_frequency;
-	(void)SYS_clock_frequency;
+	// MCO config
+	config_MCO(MCO1_A8);
+	//config_MCO(MCO2_C9);
 
 	// GPIO config
 	config_GPIO(GPIOE, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);
+	config_GPIO(GPIOD, 9, GPIO_input, GPIO_pull_up, GPIO_open_drain);
+
+	// EXTI config
+	config_EXTI(9, GPIOD, 1, 1);
+	start_EXTI(9);
+
+	// TIM config
+	config_TIM(TIM8, 20000, 10000);
+	start_TIM_update_irq(TIM8);
+	start_TIM(TIM8);
+
 
 
 	// main loop
 	for(;;) {
-		GPIO_toggle(GPIOE, 1);
-		delay_ms(100);
+		__NOP();
 	}
 }
 #endif

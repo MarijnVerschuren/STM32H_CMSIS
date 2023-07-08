@@ -5,11 +5,13 @@
 
 >### High Priority
 >* clock security on HSE and LSE (+interrupt!!)
->* find out how systick works (found nothing in RCC)
+>* HRTIM
+>* LPTIM
 
 >### Medium Priority
->* RTC
 >* Redo sys_clock_init function to allow re-configuration (VOS downscaling etc...)
+>* Move MCO config from sys.x to mco.x
+>* RTC
 
 >### Low Priority
 >* Low power
@@ -21,6 +23,7 @@
 >* clock trimming (RCC->ICSCR, RCC->HSICFGR, RCC->CRRCR, RCC->CSICFGR)
 
 >### Research
+>* EXTI > 15?
 >* oscillator drive?
 >* (clock) Domains
 >* kernel and "per" clocks

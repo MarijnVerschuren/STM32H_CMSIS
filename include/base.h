@@ -53,6 +53,8 @@ typedef struct {
  * */
 dev_id_t dev_to_id(void* dev);
 void* id_to_dev(dev_id_t id);
+uint8_t dev_to_int(void* dev);
+void* int_to_dev(uint8_t num, uint32_t base);
 /*!<
  * buffer
  * */

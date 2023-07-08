@@ -6,24 +6,13 @@
 
 
 /*!<
- * misc
- * */
-uint8_t GPIO_to_int(GPIO_TypeDef* port) {
-	return ((uint32_t)(port - AHB4_BASE) >> 10) & 0x7UL;
-}
-GPIO_TypeDef* int_to_GPIO(uint8_t num) {
-	return (GPIO_TypeDef*)(((num & 0x7UL) << 10) + AHB4_BASE);
-}
-
-
-/*!<
  * init / enable / disable
  * */
 void enable_GPIO(GPIO_TypeDef* port) {
-	RCC->AHB4ENR |= 0b1UL << GPIO_to_int(port);
+	RCC->AHB4ENR |= 0b1UL << dev_to_int(port);
 }
 void disable_GPIO(GPIO_TypeDef* port) {
-	RCC->AHB4ENR &= ~(0b1UL << GPIO_to_int(port));
+	RCC->AHB4RSTR |= 0b1UL << dev_to_int(port);
 }
 
 void reset_GPIO(GPIO_TypeDef* port, uint8_t pin) {

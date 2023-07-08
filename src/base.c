@@ -30,6 +30,21 @@ void* id_to_dev(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_ID_APB4)	{ return (void*)((id.dev << 10) + APB4_BASE); }
 	return (void*)((id.dev << 10) + AHB4_BASE);
 }
+uint8_t dev_to_int(void* dev) {
+	if ((uint32_t)dev < APB1_BASE)		{ return -1; }
+	if ((uint32_t)dev < APB2_BASE)		{ return ((uint32_t)dev - APB1_BASE) >> 10u; }
+	if ((uint32_t)dev < AHB1_BASE)		{ return ((uint32_t)dev - APB2_BASE) >> 10u; }
+	if ((uint32_t)dev < AHB2_BASE)		{ return ((uint32_t)dev - AHB1_BASE) >> 10u; }
+	if ((uint32_t)dev < APB3_BASE)		{ return ((uint32_t)dev - AHB2_BASE) >> 10u; }
+	if ((uint32_t)dev < AHB3_BASE)		{ return ((uint32_t)dev - APB3_BASE) >> 10u; }
+	if ((uint32_t)dev < APB4_BASE)		{ return ((uint32_t)dev - AHB3_BASE) >> 10u; }
+	if ((uint32_t)dev < AHB4_BASE)		{ return ((uint32_t)dev - APB4_BASE) >> 10u; }
+	return ((uint32_t)dev - AHB4_BASE) >> 10u;
+
+}
+void* int_to_dev(uint8_t num,  uint32_t base) {
+	return (void*)((num << 10) + base);
+}
 
 
 /*!<

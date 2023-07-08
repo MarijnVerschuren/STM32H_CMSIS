@@ -5,7 +5,6 @@
 #ifndef STM32H_CMSIS_GPIO_H
 #define STM32H_CMSIS_GPIO_H
 #include "main.h"
-#include "base.h"
 
 
 /*!<
@@ -36,22 +35,21 @@ typedef enum {
 
 
 /*!<
- * misc
- * */
-uint8_t GPIO_to_int(GPIO_TypeDef* port);
-GPIO_TypeDef* int_to_GPIO(uint8_t num);
-/*!<
- * init / enable / disable
+ * init
  * */
 void enable_GPIO(GPIO_TypeDef* port);
 void disable_GPIO(GPIO_TypeDef* port);
 void reset_GPIO(GPIO_TypeDef* port, uint8_t pin);
 void fconfig_GPIO(GPIO_TypeDef* port, uint8_t pin, GPIO_MODE_t mode, GPIO_PULL_t pull, GPIO_OT_t output_type, GPIO_SPEED_t speed, uint8_t alternate_function);
 void config_GPIO(GPIO_TypeDef* port, uint8_t pin, GPIO_MODE_t mode, GPIO_PULL_t pull, GPIO_OT_t output_type);
-/*!< output */
+/*!<
+ * output
+ * */
 void GPIO_write(GPIO_TypeDef* port, uint8_t pin, uint8_t data);
 void GPIO_toggle(GPIO_TypeDef* port, uint8_t pin);
-/*!< input */
+/*!<
+ * input
+ * */
 uint8_t GPIO_read(GPIO_TypeDef* port, uint8_t pin);
 
 #endif //STM32H_CMSIS_GPIO_H

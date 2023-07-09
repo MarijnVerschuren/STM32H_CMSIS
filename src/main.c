@@ -6,6 +6,8 @@
 #include "exti.h"
 #include "pwm.h"
 #include "crc.h"
+#include "encoder.h"
+#include "uart.h"
 
 
 #if defined(STM32H7xx)

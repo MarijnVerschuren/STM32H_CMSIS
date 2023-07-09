@@ -5,8 +5,8 @@ if __name__ == "__main__":
 	tim_dev = "-tim" in sys.argv
 	tim_dev |= (hrtim_dev := "-hrtim" in sys.argv)
 	tim_dev |= (lptim_dev := "-lptim" in sys.argv)
-	
-	general_dev = not tim_dev  # no mode selected
+	uart_dev = "-uart" in sys.argv
+	uart_dev |= (lpuart_dev := "-lpuart" in sys.argv)
 	
 	clocks = {
 		"APB1": 0, "AHB1": 1,
@@ -31,19 +31,21 @@ if __name__ == "__main__":
 		"LPTIM2": (6, 9),   "LPTIM3": (6, 10),
 		"LPTIM4": (6, 11),  "LPTIM5": (6, 12)
 	}
+	uarts = {
+		"UART1": (2, 4),   "UART2": (0, 17),
+		"UART3": (0, 18),  "UART4": (0, 19),
+		"UART5": (0, 20),  "UART6": (2, 5),
+		"UART7": (0, 30),  "UART8": (0, 31),
+		"LPUART1": (6, 3)
+	}
 	
 	while True:
 		try:
 			sub = 0
-			if general_dev:
-				clk = input("clk: ")
-				try:    clk = int(clk)
-				except: clk = int(clocks[clk.upper()])
-				dev = int(input("offset: "), base=16) >> 10
-			elif tim_dev:
+			if tim_dev:
 				tim = tims["HRTIM"]
 				if not hrtim_dev:
-					tim = input('tim: ')
+					tim = input("tim: ")
 					try:    tim = tims[f"LPTIM{int(tim)}" if lptim_dev else f"TIM{int(tim)}"]
 					except: tim = tims[tim.upper()]
 				clk, dev = tim
@@ -54,6 +56,16 @@ if __name__ == "__main__":
 					sub |= hrtim << 3
 				channel = max((int(input("channel: ")) - 1), 0)
 				sub |= channel & 0x7
+			elif uart_dev:
+				uart = input("uart: ")
+				try:    uart = uarts[f"LPUART{int(uart)}" if lpuart_dev else f"UART{int(uart)}"]
+				except: uart = uarts[uart.upper()]
+				clk, dev = uart
+			else:
+				clk = input("clk: ")
+				try:    clk = int(clk)
+				except: clk = int(clocks[clk.upper()])
+				dev = int(input("offset: "), base=16) >> 10
 			alt = int(input("alt: "))
 			pin = input("pin: ")
 			port = int(ports[pin[0].upper()])

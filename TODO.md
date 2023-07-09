@@ -4,6 +4,7 @@
 >* Create basic functionality (GPIO, EXTI, TIM, SYS_CFG)
 
 >### High Priority
+>* Clean up code (make 0xA0UL and 0b10UL consistent!!)
 >* clock security on HSE and LSE (+interrupt!!)
 >* HRTIM
 >* LPTIM
@@ -26,9 +27,11 @@
 >### Research
 >* EXTI > 15?
 >* BKIN
+>* consider moving LPTIM_GPIO into their own enum
 >* oscillator drive?
 >* (clock) Domains
 >* kernel and "per" clocks
 
 >### Test
+>* test 'encoder.h' !!!!!!!!!!!!!!!!!!!!!!!!!
 >* test if LSE and RTC enable need to be split

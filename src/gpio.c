@@ -14,9 +14,6 @@ GPIO_TypeDef* int_to_GPIO(uint8_t num) { return int_to_dev(num, AHB4_BASE); }
 /*!<
  * init
  * */
-void enable_GPIO(GPIO_TypeDef* port) {
-	RCC->AHB4ENR |= 0b1UL << dev_to_int(port);
-}
 void disable_GPIO(GPIO_TypeDef* port) {
 	RCC->AHB4RSTR |= 0b1UL << dev_to_int(port);
 }
@@ -28,7 +25,8 @@ void reset_GPIO(GPIO_TypeDef* port, uint8_t pin) {
 	port->OTYPER &= ~(0b1UL << pin);
 }
 void fconfig_GPIO(GPIO_TypeDef* port, uint8_t pin, GPIO_MODE_t mode, GPIO_PULL_t pull, GPIO_OT_t output_type, GPIO_SPEED_t speed, uint8_t alternate_function) {
-	enable_GPIO(port);
+	uint32_t mask = 0b1UL << dev_to_int(port);
+	do { RCC->AHB4ENR |= mask; } while (!(RCC->AHB4ENR & mask));
 	reset_GPIO(port, pin);
 	uint8_t pos = ((pin & 0xFUL) << 1);
 	port->MODER |= mode << pos;

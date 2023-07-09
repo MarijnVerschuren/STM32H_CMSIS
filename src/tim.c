@@ -6,6 +6,21 @@
 
 
 /*!<
+ * init
+ * */
+static inline void enable_TIM(const TIM_TypeDef* const tim) {
+	uint32_t mask;
+	if ((((uint32_t)tim) - APB1PERIPH_BASE) >= 0x00010000UL) {
+		mask = (0b1u << (((uint32_t)tim - APB2PERIPH_BASE) >> 10u));
+		do { RCC->APB2ENR |= mask; } while (!(RCC->APB2ENR & mask));
+	} else {
+		mask = (0b1u << (((uint32_t)tim - APB1PERIPH_BASE) >> 10u));
+		do { RCC->APB1LENR |= mask; } while (!(RCC->APB1LENR & mask));
+	}
+}
+
+
+/*!<
  * misc
  * */
 uint8_t TIM_to_IRQn(TIM_TypeDef* tim) {
@@ -26,10 +41,8 @@ uint8_t TIM_to_IRQn(TIM_TypeDef* tim) {
  * */
 void fconfig_TIM(TIM_TypeDef* tim, uint16_t prescaler, uint32_t limit, uint8_t auto_reload_preload, uint8_t down_count, uint8_t one_pulse) {
 	uint32_t mask = TIM2 >= tim && tim <= TIM5 ? 0xffffffff : 0xffff;  // 32 | 16 bit timers
-	if ((((uint32_t)tim) - APB1PERIPH_BASE) >= 0x00010000UL)	{ RCC->APB2ENR |= (0b1u << (((uint32_t)tim - APB2PERIPH_BASE) >> 10u)); }
-	else														{ RCC->APB1LENR |= (0b1u << (((uint32_t)tim - APB1PERIPH_BASE) >> 10u)); }
-	// write has to be looped because peripheral startup may not have been finished
-	do { tim->PSC = prescaler; } while (tim->PSC != prescaler);
+	enable_TIM(tim);
+	tim->PSC = prescaler;
 	tim->ARR = limit & mask;
 	tim->CR1 &= ~TIM_CR1_ARPE;
 	tim->CR1 &= ~TIM_CR1_DIR;

@@ -41,7 +41,6 @@ GPIO_TypeDef* int_to_GPIO(uint8_t num);
 /*!<
  * init
  * */
-void enable_GPIO(GPIO_TypeDef* port);
 void disable_GPIO(GPIO_TypeDef* port);
 void reset_GPIO(GPIO_TypeDef* port, uint8_t pin);
 void fconfig_GPIO(GPIO_TypeDef* port, uint8_t pin, GPIO_MODE_t mode, GPIO_PULL_t pull, GPIO_OT_t output_type, GPIO_SPEED_t speed, uint8_t alternate_function);

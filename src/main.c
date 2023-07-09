@@ -5,6 +5,7 @@
 #include "tim.h"
 #include "exti.h"
 #include "pwm.h"
+#include "crc.h"
 
 
 #if defined(STM32H7xx)
@@ -99,6 +100,9 @@ int main(void) {
 
 	// PWM config
 	config_PWM(TIM1_CH1_A8, 200, 20000);  // 50Hz
+
+	// CRC config
+	config_CRC();
 
 
 	// main loop

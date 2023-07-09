@@ -14,6 +14,7 @@
 >* RTC
 
 >### Low Priority
+>* timer BKIN config
 >* Low power
 
 >### Features
@@ -24,6 +25,7 @@
 
 >### Research
 >* EXTI > 15?
+>* BKIN
 >* oscillator drive?
 >* (clock) Domains
 >* kernel and "per" clocks

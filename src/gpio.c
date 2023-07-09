@@ -6,7 +6,13 @@
 
 
 /*!<
- * init / enable / disable
+ * init
+ * */
+GPIO_TypeDef* int_to_GPIO(uint8_t num) { return int_to_dev(num, AHB4_BASE); }
+
+
+/*!<
+ * init
  * */
 void enable_GPIO(GPIO_TypeDef* port) {
 	RCC->AHB4ENR |= 0b1UL << dev_to_int(port);

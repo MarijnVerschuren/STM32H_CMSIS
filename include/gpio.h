@@ -35,6 +35,10 @@ typedef enum {
 
 
 /*!<
+ * misc
+ * */
+GPIO_TypeDef* int_to_GPIO(uint8_t num);
+/*!<
  * init
  * */
 void enable_GPIO(GPIO_TypeDef* port);

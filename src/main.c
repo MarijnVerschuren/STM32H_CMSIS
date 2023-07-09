@@ -4,6 +4,7 @@
 #include "mco.h"
 #include "tim.h"
 #include "exti.h"
+#include "pwm.h"
 
 
 #if defined(STM32H7xx)
@@ -96,29 +97,14 @@ int main(void) {
 	start_TIM_update_irq(TIM8);
 	start_TIM(TIM8);
 
-	// debug
-	uint32_t ht_cd2 = HRTIM_CHD2_A12;
-	volatile dev_pin_t ht_cd2_dev_pin = *((dev_pin_t*)&ht_cd2);
-	volatile dev_id_t ht_cd2_dev = ht_cd2_dev_pin.dev_id;
-	volatile void* hrtim = id_to_dev(ht_cd2_dev);
-	(void)ht_cd2_dev_pin; (void)ht_cd2_dev;
-
-	uint32_t lt_o = LPTIM3_OUT_A1;
-	volatile dev_pin_t lt_o_dev_pin = *((dev_pin_t*)&lt_o);
-	volatile dev_id_t lt_o_dev = lt_o_dev_pin.dev_id;
-	volatile void* lptim = id_to_dev(lt_o_dev);
-	(void)lt_o_dev_pin; (void)lt_o_dev;
+	// PWM config
+	config_PWM(TIM1_CH1_A8, 200, 20000);  // 50Hz
 
 
 	// main loop
 	for(;;) {
-		if (hrtim == HRTIM1) {
-			__NOP();
-		}
-		if (lptim == LPTIM3) {
-			__NOP();
-		}
-		__NOP();
+		TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
+		delay_ms(100);
 	}
 }
 #endif

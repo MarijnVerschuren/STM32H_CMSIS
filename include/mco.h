@@ -12,8 +12,8 @@
  * types
  * */
 typedef enum {
-	MCO1_A8 = 0x8000000,
-	MCO2_C9 = 0x9200000
+	MCO1_A8 = 0x08000000,
+	MCO2_C9 = 0x09200000
 } MCO_GPIO_t;
 
 

@@ -8,7 +8,7 @@
 
 
 /*!<
- * device_id types
+ * device types
  * */
 typedef enum {
 	DEV_CLOCK_ID_APB1 =	0x0,
@@ -49,12 +49,15 @@ typedef struct {
 
 
 /*!<
- * device_id
+ * device
  * */
+void enable_dev(void* dev);
+void disable_dev(void* dev);
+
 dev_id_t dev_to_id(void* dev);
 void* id_to_dev(dev_id_t id);
+
 uint8_t dev_to_int(void* dev);
-void* int_to_dev(uint8_t num, uint32_t base);
 /*!<
  * buffer
  * */

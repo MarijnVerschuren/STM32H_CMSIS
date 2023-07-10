@@ -18,10 +18,6 @@ static inline uint8_t EXTI_line_to_IRQn(uint8_t EXTI_line) {
 /*!<
  * init
  * */
-void disable_EXTI(void) {
-	RCC->APB4RSTR |= RCC_APB4ENR_SYSCFGEN;
-}
-
 void config_EXTI(uint8_t EXTI_line, GPIO_TypeDef* EXTI_port, uint8_t falling_edge, uint8_t rising_edge) {
 	do { RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN; } while (!(RCC->APB4ENR & RCC_APB4ENR_SYSCFGEN));
 	EXTI_line &= 0xfu;

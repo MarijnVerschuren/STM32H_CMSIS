@@ -92,7 +92,6 @@ typedef enum {
 /*!<
  * init
  * */
-void disable_UART(USART_TypeDef* usart);
 void fconfig_UART(UART_GPIO_t tx, UART_GPIO_t rx, uint32_t baud, UART_oversampling_t oversampling);
 void config_UART(UART_GPIO_t tx, UART_GPIO_t rx, uint32_t baud);
 /*!<

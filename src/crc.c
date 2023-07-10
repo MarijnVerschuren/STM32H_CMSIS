@@ -17,7 +17,8 @@ void fconfig_CRC(uint8_t reverse_out, CRC_REV_IN_t reverse_in, CRC_POLY_SIZE_t p
 	); reset_CRC();
 }
 void config_CRC(void) { fconfig_CRC(0, CRC_REV_IN_BONA, CRC_POLY_SIZE_32); }
-void disable_CRC(void) { RCC->AHB4RSTR |= RCC_AHB4ENR_CRCEN; }
+
+
 /*!<
  * actions
  * */

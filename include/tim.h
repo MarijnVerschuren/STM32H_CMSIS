@@ -176,7 +176,6 @@ void fconfig_TIM(
 		uint8_t auto_reload_preload,	uint8_t down_count,		uint8_t one_pulse
 );
 void config_TIM(TIM_TypeDef* tim, uint16_t prescaler, uint32_t limit);
-void disable_TIM(TIM_TypeDef* tim);
 /*!<
  * actions
  * */

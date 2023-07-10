@@ -8,6 +8,37 @@
 /*!<
  * device
  * */
+void enable_dev(void* dev) {
+	dev_id_t id = dev_to_id(dev);
+	if (id.clk == DEV_CLOCK_NONE) { return; }
+	uint32_t mask = (0b1UL << (id.dev & 0b11111UL));
+	volatile uint32_t* reg; switch (id.clk) {
+		case DEV_CLOCK_ID_APB1: reg = ((&RCC->APB1LENR) + ((id.dev >> 5) & 0b1UL)); break;
+		case DEV_CLOCK_ID_APB2: reg = &RCC->APB2ENR; break;
+		case DEV_CLOCK_ID_AHB1: reg = &RCC->AHB1ENR; break;
+		case DEV_CLOCK_ID_AHB2: reg = &RCC->AHB2ENR; break;
+		case DEV_CLOCK_ID_APB3: reg = &RCC->APB3ENR; break;
+		case DEV_CLOCK_ID_AHB3: reg = &RCC->AHB3ENR; break;
+		case DEV_CLOCK_ID_APB4: reg = &RCC->APB4ENR; break;
+		case DEV_CLOCK_ID_AHB4: reg = &RCC->AHB4ENR; break;
+	} do { (*reg) |= mask; } while (!((*reg) & mask));
+}
+void disable_dev(void* dev) {
+	dev_id_t id = dev_to_id(dev);
+	if (id.clk == DEV_CLOCK_NONE) { return; }
+	uint32_t mask = (0b1UL << (id.dev & 0b11111UL));
+	volatile uint32_t* reg; switch (id.clk) {
+		case DEV_CLOCK_ID_APB1: reg = ((&RCC->APB1LRSTR) + ((id.dev >> 5) & 0b1UL)); break;
+		case DEV_CLOCK_ID_APB2: reg = &RCC->APB2RSTR; break;
+		case DEV_CLOCK_ID_AHB1: reg = &RCC->AHB1RSTR; break;
+		case DEV_CLOCK_ID_AHB2: reg = &RCC->AHB2RSTR; break;
+		case DEV_CLOCK_ID_APB3: reg = &RCC->APB3RSTR; break;
+		case DEV_CLOCK_ID_AHB3: reg = &RCC->AHB3RSTR; break;
+		case DEV_CLOCK_ID_APB4: reg = &RCC->APB4RSTR; break;
+		case DEV_CLOCK_ID_AHB4: reg = &RCC->AHB4RSTR; break;
+	} (*reg) |= mask;
+}
+
 dev_id_t dev_to_id(void* dev) {
 	if ((uint32_t)dev < APB1_BASE)		{ return (dev_id_t){0, DEV_CLOCK_NONE}; }
 	if ((uint32_t)dev < APB2_BASE)		{ return (dev_id_t){((uint32_t)dev - APB1_BASE) >> 10u, DEV_CLOCK_ID_APB1}; }
@@ -17,7 +48,7 @@ dev_id_t dev_to_id(void* dev) {
 	if ((uint32_t)dev < AHB3_BASE)		{ return (dev_id_t){((uint32_t)dev - APB3_BASE) >> 10u, DEV_CLOCK_ID_APB3}; }
 	if ((uint32_t)dev < APB4_BASE)		{ return (dev_id_t){((uint32_t)dev - AHB3_BASE) >> 10u, DEV_CLOCK_ID_AHB3}; }
 	if ((uint32_t)dev < AHB4_BASE)		{ return (dev_id_t){((uint32_t)dev - APB4_BASE) >> 10u, DEV_CLOCK_ID_APB4}; }
-	return (dev_id_t){((uint32_t)dev - AHB4_BASE) >> 10u, DEV_CLOCK_ID_AHB4};  // TODO: check out of range
+	return (dev_id_t){((uint32_t)dev - AHB4_BASE) >> 10u, DEV_CLOCK_ID_AHB4};
 }
 void* id_to_dev(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_NONE)		{ return NULL; }
@@ -30,6 +61,7 @@ void* id_to_dev(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_ID_APB4)	{ return (void*)((id.dev << 10) + APB4_BASE); }
 	return (void*)((id.dev << 10) + AHB4_BASE);
 }
+
 uint8_t dev_to_int(void* dev) {
 	if ((uint32_t)dev < APB1_BASE)		{ return -1; }
 	if ((uint32_t)dev < APB2_BASE)		{ return ((uint32_t)dev - APB1_BASE) >> 10u; }
@@ -40,10 +72,6 @@ uint8_t dev_to_int(void* dev) {
 	if ((uint32_t)dev < APB4_BASE)		{ return ((uint32_t)dev - AHB3_BASE) >> 10u; }
 	if ((uint32_t)dev < AHB4_BASE)		{ return ((uint32_t)dev - APB4_BASE) >> 10u; }
 	return ((uint32_t)dev - AHB4_BASE) >> 10u;
-
-}
-void* int_to_dev(uint8_t num,  uint32_t base) {
-	return (void*)((num << 10) + base);
 }
 
 

@@ -31,7 +31,6 @@ typedef enum {
  * */
 void fconfig_CRC(uint8_t reverse_out, CRC_REV_IN_t reverse_in, CRC_POLY_SIZE_t poly_size);
 void config_CRC(void);
-void disable_CRC(void);
 /*!<
  * actions
  * */

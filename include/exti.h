@@ -10,7 +10,6 @@
 /*!<
  * init
  * */
-void disable_EXTI(void);
 void config_EXTI(uint8_t EXTI_line, GPIO_TypeDef* EXTI_port, uint8_t falling_edge, uint8_t rising_edge);
 void start_EXTI(uint8_t EXTI_line);
 void stop_EXTI(uint8_t EXTI_line);

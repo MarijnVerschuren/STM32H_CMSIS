@@ -84,8 +84,7 @@ int main(void) {
 	sys_clock_init(sys_config);
 
 	// MCO config
-	config_MCO(MCO1_A8);
-	//config_MCO(MCO2_C9);
+	config_MCO(MCO2_C9);
 
 	// GPIO config
 	config_GPIO(GPIOE, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);
@@ -107,13 +106,14 @@ int main(void) {
 	config_CRC();
 
 	// UART config
-	config_UART(UART1_TX_A9, UART1_RX_A10, 115200, 1);
-
+	config_UART(UART1_TX_A9, UART1_RX_A10, 115200, 0);
+	
 
 	// main loop
 	for(;;) {
 		TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
-		UART_write(USART1, &TIM1->CCR1, 2, 10); delay_ms(100);
+		UART_print(USART1, "Hello World!\n", 100);
+		delay_ms(100);
 	}
 }
 #endif

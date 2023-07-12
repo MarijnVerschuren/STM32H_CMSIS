@@ -58,11 +58,11 @@ void fconfig_UART(
 	dev_pin_t		tx_dev = *((dev_pin_t*)&tx),				rx_dev = *((dev_pin_t*)&rx);
 	USART_TypeDef	*tx_uart = id_to_dev(tx_dev.dev_id),		*rx_uart = id_to_dev(rx_dev.dev_id),		*uart = NULL;
 	GPIO_TypeDef	*tx_port = int_to_GPIO(tx_dev.port_num),	*rx_port = int_to_GPIO(tx_dev.port_num);
-	if (tx_enable) { uart = tx_uart; fconfig_GPIO(tx_port, tx, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_dev.alt_func); }
-	if (rx_enable) { uart = rx_uart; fconfig_GPIO(rx_port, rx, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_dev.alt_func); }
+	if (tx_enable) { uart = tx_uart; fconfig_GPIO(tx_port, tx_dev.pin_num, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_dev.alt_func); }
+	if (rx_enable) { uart = rx_uart; fconfig_GPIO(rx_port, rx_dev.pin_num, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_dev.alt_func); }
 	if (tx_enable && rx_enable && (tx_uart != rx_uart)) { return; }  // error if tx and rx are on different usart devices
 	enable_dev(uart);
-	uint16_t uart_div = UART_division(tx_dev.dev_id.clk, baud) << oversampling;
+	uint16_t uart_div = UART_division(tx_dev.dev_id.clk, baud) >> (1 - oversampling);
 	uart->BRR = ((uart_div & 0xfff0) | ((uart_div & 0xf) >> oversampling));
 	do { uart->CR1 &= ~USART_CR1_UE; } while (uart->CR1 & USART_CR1_UE);
 	uart->CR1 = (
@@ -79,17 +79,18 @@ void fconfig_UART(
 	);
 	do { uart->CR1 |= (
 			(tx_enable << USART_CR1_TE_Pos)						|
-			(rx_enable << USART_CR1_RE_Pos)
-	); } while (  // TODO: inf loop!!
+			(rx_enable << USART_CR1_RE_Pos)						|
+			USART_CR1_UE
+	); } while (
 			(tx_enable && !(uart->ISR & USART_ISR_TEACK))		||
 			(rx_enable && !(uart->ISR & USART_ISR_REACK))
-	); uart->CR1 |= USART_CR1_UE;
+	);
 }
 
 void config_UART(UART_GPIO_t tx, UART_GPIO_t rx, uint32_t baud, uint8_t fifo) {
 	fconfig_UART(
-			tx, rx, baud, fifo, USART_STOP_BIT_1, USART_PARITY_DISABLED,
-			0, USART_OVERSAMPLING_16, USART_WORD_LENGTH_8
+			tx, rx, baud, fifo, UART_STOP_BIT_1, UART_PARITY_DISABLED,
+			0, UART_OVERSAMPLING_16, UART_WORD_LENGTH_8
 	);
 }
 

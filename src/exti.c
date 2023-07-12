@@ -24,7 +24,7 @@ void config_EXTI(uint8_t EXTI_line, GPIO_TypeDef* EXTI_port, uint8_t falling_edg
 	uint8_t pos =			(EXTI_line & 0x3UL);								// register index [0:3]
 	uint8_t index =			(EXTI_line >> 2);
 	SYSCFG->EXTICR[index] &= ~(0xFUL << (pos << 2));							// clear EXTI selection
-	SYSCFG->EXTICR[index] |= ((dev_to_int(EXTI_port) & 0xFUL) << (pos << 2));	// set EXTI selection
+	SYSCFG->EXTICR[index] |= ((GPIO_to_int(EXTI_port) & 0xFUL) << (pos << 2));	// set EXTI selection
 	EXTI->FTSR1 |= ((falling_edge & 0b1UL) << EXTI_line);
 	EXTI->RTSR1 |= ((rising_edge & 0b1UL) << EXTI_line);
 	EXTI->IMR1 |= (0b1u << EXTI_line);

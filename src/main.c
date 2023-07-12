@@ -106,11 +106,14 @@ int main(void) {
 	// CRC config
 	config_CRC();
 
+	// UART config
+	config_UART(UART1_TX_A9, UART1_RX_A10, 115200, 1);
+
 
 	// main loop
 	for(;;) {
 		TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
-		delay_ms(100);
+		UART_write(USART1, &TIM1->CCR1, 2, 10); delay_ms(100);
 	}
 }
 #endif

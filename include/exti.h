@@ -5,6 +5,7 @@
 #ifndef STM32H_CMSIS_EXTI_H
 #define STM32H_CMSIS_EXTI_H
 #include "main.h"
+#include "gpio.h"
 
 
 /*!<

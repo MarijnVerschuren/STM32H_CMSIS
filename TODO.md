@@ -4,6 +4,7 @@
 >* Create basic functionality (GPIO, EXTI, TIM, SYS_CFG)
 
 >### High Priority
+>* UART idle, addressing, timeouts, MSB-first, stop-bit-config
 >* Clean up code (make 0xA0UL and 0b10UL consistent!!)
 >* clock security on HSE and LSE (+interrupt!!)
 >* HRTIM
@@ -25,6 +26,7 @@
 >* clock trimming (RCC->ICSCR, RCC->HSICFGR, RCC->CRRCR, RCC->CSICFGR)
 
 >### Research
+>* UART fifo mode?
 >* EXTI > 15?
 >* BKIN
 >* consider moving LPTIM_GPIO into their own enum

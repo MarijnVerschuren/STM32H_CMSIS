@@ -9,7 +9,7 @@
  * init
  * */
 GPIO_TypeDef* int_to_GPIO(uint8_t num) { return (void*)((num << 10) + AHB4_BASE); }
-
+uint8_t(*GPIO_to_int)(GPIO_TypeDef* port) = (uint8_t(*)(GPIO_TypeDef*))dev_to_int;
 
 /*!<
  * init

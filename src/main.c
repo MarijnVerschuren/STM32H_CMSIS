@@ -83,8 +83,10 @@ int main(void) {
 	);
 	sys_clock_init(sys_config);
 
-	// MCO config
-	config_MCO(MCO2_C9);
+	// TIM config
+	config_TIM(TIM8, 20000, 10000);
+	start_TIM_update_irq(TIM8);
+	start_TIM(TIM8);
 
 	// GPIO config
 	config_GPIO(GPIOE, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);
@@ -94,10 +96,8 @@ int main(void) {
 	config_EXTI(9, GPIOD, 1, 1);
 	start_EXTI(9);
 
-	// TIM config
-	config_TIM(TIM8, 20000, 10000);
-	start_TIM_update_irq(TIM8);
-	start_TIM(TIM8);
+	// MCO config
+	config_MCO(MCO2_C9);
 
 	// PWM config
 	config_PWM(TIM1_CH1_A8, 200, 20000);  // 50Hz
@@ -105,9 +105,27 @@ int main(void) {
 	// CRC config
 	config_CRC();
 
+	// HASH config
+	// TODO: [3]
+
+	// CRYP config
+	// TODO: [4]
+
+	// RNG config
+	// TODO: [5]
+
 	// UART config
-	config_UART(UART1_TX_A9, UART1_RX_A10, 115200, 0);
-	
+	config_UART(UART1_TX_A9, UART1_RX_A10, 115200, 1);
+
+	// I2C config
+	// TODO: [1]
+
+	// OTG config
+	// TODO: [2]
+
+	// Watchdog config
+	// TODO: [0]
+
 
 	// main loop
 	for(;;) {

@@ -8,6 +8,7 @@
 #include "crc.h"
 #include "encoder.h"
 #include "uart.h"
+#include "watchdog.h"
 
 
 #if defined(STM32H7xx)
@@ -123,8 +124,9 @@ int main(void) {
 	// OTG config
 	// TODO: [2]
 
-	// Watchdog config
-	// TODO: [0]
+	// Watchdog config (32kHz / (4 << prescaler))
+	config_watchdog(0, 0xFFFUL);	// 1s
+	start_watchdog();
 
 
 	// main loop
@@ -132,6 +134,7 @@ int main(void) {
 		TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
 		UART_print(USART1, "Hello World!\n", 100);
 		delay_ms(100);
+		reset_watchdog();
 	}
 }
 #endif

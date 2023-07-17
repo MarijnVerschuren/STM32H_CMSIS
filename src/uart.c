@@ -54,7 +54,7 @@ void fconfig_UART(
 		UART_stop_bit_t stop, UART_parity_t parity, uint8_t msb_first,
 		UART_oversampling_t oversampling, UART_word_length_t word_length
 ) {
-	uint8_t			tx_enable = tx != USART_PIN_DISABLE,		rx_enable = rx != USART_PIN_DISABLE;
+	uint8_t			tx_enable = tx != UART_PIN_DISABLE,			rx_enable = rx != UART_PIN_DISABLE;
 	dev_pin_t		tx_dev = *((dev_pin_t*)&tx),				rx_dev = *((dev_pin_t*)&rx);
 	USART_TypeDef	*tx_uart = id_to_dev(tx_dev.dev_id),		*rx_uart = id_to_dev(rx_dev.dev_id),		*uart = NULL;
 	GPIO_TypeDef	*tx_port = int_to_GPIO(tx_dev.port_num),	*rx_port = int_to_GPIO(tx_dev.port_num);

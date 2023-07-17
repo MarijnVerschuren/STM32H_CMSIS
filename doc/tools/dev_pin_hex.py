@@ -7,6 +7,7 @@ if __name__ == "__main__":
 	tim_dev |= (lptim_dev := "-lptim" in sys.argv)
 	uart_dev = "-uart" in sys.argv
 	uart_dev |= (lpuart_dev := "-lpuart" in sys.argv)
+	i2c_dev = "-i2c" in sys.argv
 	
 	clocks = {
 		"APB1": 0, "AHB1": 1,
@@ -32,11 +33,15 @@ if __name__ == "__main__":
 		"LPTIM4": (6, 11),  "LPTIM5": (6, 12)
 	}
 	uarts = {
-		"UART1": (2, 4),   "UART2": (0, 17),
-		"UART3": (0, 18),  "UART4": (0, 19),
-		"UART5": (0, 20),  "UART6": (2, 5),
-		"UART7": (0, 30),  "UART8": (0, 31),
+		"UART1": (2, 4),    "UART2": (0, 17),
+		"UART3": (0, 18),   "UART4": (0, 19),
+		"UART5": (0, 20),   "UART6": (2, 5),
+		"UART7": (0, 30),   "UART8": (0, 31),
 		"LPUART1": (6, 3)
+	}
+	i2cs = {
+		"I2C1": (0, 21),    "I2C2": (0, 22),
+		"I2C3": (0, 23),    "I2C4": (6, 7)
 	}
 	
 	while True:
@@ -61,6 +66,11 @@ if __name__ == "__main__":
 				try:    uart = uarts[f"LPUART{int(uart)}" if lpuart_dev else f"UART{int(uart)}"]
 				except: uart = uarts[uart.upper()]
 				clk, dev = uart
+			elif i2c_dev:
+				i2c = input("i2c: ")
+				try:    i2c = i2cs[f"I2C{int(i2c)}"]
+				except: i2c = i2cs[i2c.upper()]
+				clk, dev = i2c
 			else:
 				clk = input("clk: ")
 				try:    clk = int(clk)

@@ -6,6 +6,7 @@
 #define STM32H_CMSIS_MCO_H
 #include "main.h"
 #include "gpio.h"
+#include "sys.h"
 
 
 /*!<
@@ -29,6 +30,13 @@ typedef enum {
 	MCO2_SRC_CSI =		0b100,
 	MCO2_SRC_LSI =		0b101,
 } MCO_SRC_t;
+
+
+/*!<
+ * variables
+ * */
+extern uint32_t MCO1_kernel_frequency;
+extern uint32_t MCO2_kernel_frequency;
 
 
 /*!<

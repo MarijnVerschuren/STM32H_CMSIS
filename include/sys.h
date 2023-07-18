@@ -425,6 +425,7 @@ typedef struct {
 extern const uint32_t LSI_clock_frequency;
 extern const uint32_t LSE_clock_frequency;
 extern const uint32_t CSI_clock_frequency;
+extern const uint32_t HSI48_clock_frequency;
 
 
 /*!<

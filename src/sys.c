@@ -15,32 +15,33 @@ static IRQ_callback_t	clock_fault_func =	NULL;
 /*!<
  * constants
  * */
-const uint32_t LSI_clock_frequency = 32768;
-const uint32_t LSE_clock_frequency = 32768;
-const uint32_t CSI_clock_frequency = 4000000;
+const uint32_t LSI_clock_frequency =	32768;
+const uint32_t LSE_clock_frequency =	32768;
+const uint32_t CSI_clock_frequency =	4000000;
+const uint32_t HSI48_clock_frequency =	48000000;
 
 
 /*!<
  * variables
  * */
-uint32_t HSI_clock_frequency = 64000000;	// HSI is 64 MHz by default
-uint32_t HSE_clock_frequency = 0;			// HSE is within [4, 48] MHz
-uint32_t PLL1_P_clock_frequency = 0;
-uint32_t PLL1_Q_clock_frequency = 0;
-uint32_t PLL1_R_clock_frequency = 0;
-uint32_t PLL2_P_clock_frequency = 0;
-uint32_t PLL2_Q_clock_frequency = 0;
-uint32_t PLL2_R_clock_frequency = 0;
-uint32_t PLL3_P_clock_frequency = 0;
-uint32_t PLL3_Q_clock_frequency = 0;
-uint32_t PLL3_R_clock_frequency = 0;
-uint32_t AHB_clock_frequency = 64000000;
-uint32_t APB1_clock_frequency = 64000000;
-uint32_t APB2_clock_frequency = 64000000;
-uint32_t APB3_clock_frequency = 64000000;
-uint32_t APB4_clock_frequency = 64000000;
-uint32_t RTC_clock_frequency = 0;
-uint32_t SYS_clock_frequency = 64000000;
+uint32_t HSI_clock_frequency =		64000000;	// HSI is 64 MHz by default
+uint32_t HSE_clock_frequency =		0;			// HSE is within [4, 48] MHz
+uint32_t PLL1_P_clock_frequency =	0;
+uint32_t PLL1_Q_clock_frequency =	0;
+uint32_t PLL1_R_clock_frequency =	0;
+uint32_t PLL2_P_clock_frequency =	0;
+uint32_t PLL2_Q_clock_frequency =	0;
+uint32_t PLL2_R_clock_frequency =	0;
+uint32_t PLL3_P_clock_frequency =	0;
+uint32_t PLL3_Q_clock_frequency =	0;
+uint32_t PLL3_R_clock_frequency =	0;
+uint32_t AHB_clock_frequency =		64000000;
+uint32_t APB1_clock_frequency =		64000000;
+uint32_t APB2_clock_frequency =		64000000;
+uint32_t APB3_clock_frequency =		64000000;
+uint32_t APB4_clock_frequency =		64000000;
+uint32_t RTC_clock_frequency =		0;
+uint32_t SYS_clock_frequency =		64000000;
 
 volatile uint64_t tick = 0;  // updated with sys_tick
 

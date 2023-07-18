@@ -327,25 +327,6 @@ typedef enum {
 } SYSTICK_CLK_SRC_t;	// 1 bit
 
 
-//!< MCO
-typedef enum {
-	MCO2_CLK_SRC_SYS =				0b000,	//R
-	MCO2_CLK_SRC_PLL2_P =			0b001,
-	MCO2_CLK_SRC_HSE =				0b010,
-	MCO2_CLK_SRC_PLL1_P =			0b011,
-	MCO2_CLK_SRC_CSI =				0b100,
-	MCO2_CLK_SRC_LSI =				0b101
-} MCO2_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	MCO1_CLK_SRC_HSI =				0b000,	//R
-	MCO1_CLK_SRC_LSE =				0b001,
-	MCO1_CLK_SRC_HSE =				0b010,
-	MCO1_CLK_SRC_PLL1_Q =			0b011,
-	MCO1_CLK_SRC_HSI48 =			0b100,
-} MCO1_CLK_SRC_t;		// 3 bit
-
-
 //!< config struct
 typedef struct {
 	// PLL
@@ -388,45 +369,53 @@ typedef struct {
 	uint64_t			APB2_prescaler			: 3;	// APB_CLK_PRE_t	domain 2
 	uint64_t			APB1_prescaler			: 3;	// APB_CLK_PRE_t	domain 2
 	uint64_t			APB4_prescaler			: 3;	// APB_CLK_PRE_t	domain 3
-	// Peripherals
-	uint64_t			TIM_prescaler			: 1;	// TIM_PRE_t
-	uint64_t			HRTIM_src				: 1;	// HRTIM_SRC_t
 	uint64_t			PER_src					: 2;	// PER_SRC_t
-	uint64_t			SDMMC_CLK_src			: 1;	// SDMMC_CLK_SRC_t
-	uint64_t			QSPI_CLK_src			: 2;	// QSPI_CLK_SRC_t
-	uint64_t			FMC_CLK_src				: 2;	// FMC_CLK_SRC_t
-	uint64_t			SWPMI_CLK_src			: 1;	// SWPMI_CLK_SRC_t
-	uint64_t			FDCAN_CLK_src			: 2;	// FDCAN_CLK_SRC_t
-	uint64_t			DFSDM1_CLK_src			: 1;	// DFSDM1_CLK_SRC_t
-	uint64_t			SPDIFRX_CLK_src			: 2;	// SPDIFRX_CLK_SRC_t
-	uint64_t			SPI45_CLK_src			: 3;	// SPI45_CLK_SRC_t
-	uint64_t			SPI123_CLK_src			: 3;	// SPI123_CLK_SRC_t
-	uint64_t			SAI23_CLK_src			: 3;	// SAI_CLK_SRC_t
-	uint64_t			SAI1_CLK_src			: 3;	// SAI_CLK_SRC_t
-	uint64_t			LPTIM1_CLK_src			: 3;	// LPTIM1_CLK_SRC_t
-	uint64_t			HDMI_CEC_CLK_src		: 2;	// HDMI_CEC_CLK_SRC_t
-	uint64_t			USB_OTG12_CLK_src		: 2;	// USB_OTG12_CLK_SRC_t
-	uint64_t			I2C123_CLK_src			: 2;	// I2C123_CLK_SRC_t
-	uint64_t			RNG_CLK_src				: 2;	// RNG_CLK_SRC_t
-	uint64_t			USART16_CLK_src			: 3;	// USART_CLK_SRC_t
-	uint64_t			USART234578_CLK_src		: 3;	// USART_CLK_SRC_t
-	uint64_t			SPI6_CLK_src			: 3;	// SPI6_CLK_SRC_t
-	uint64_t			SAR_ADC_CLK_src			: 2;	// SAR_ADC_CLK_SRC_t
-	uint64_t			I2C4_CLK_src			: 2;	// I2C4_CLK_SRC_t
-	uint32_t			SAI4B_CLK_src			: 3;	// SAI4_CLK_SRC_t
-	uint32_t			SAI4A_CLK_src			: 3;	// SAI4_CLK_SRC_t
-	uint32_t			LPTIM345_CLK_src		: 3;	// LPTIM2345_CLK_SRC_t
-	uint32_t			LPTIM2_CLK_src			: 3;	// LPTIM2345_CLK_SRC_t
-	uint32_t			LPUART1_CLK_src			: 3;	// LPUART1_CLK_SRC_t
+	// Peripherals : 64  // TODO: move all these settings to the respective peripheral files
+	uint64_t			TIM_prescaler			: 1;	// TIM_PRE_t			// tim.h
+	uint64_t			HRTIM_src				: 1;	// HRTIM_SRC_t			// tim.h
+	uint64_t			LPTIM1_CLK_src			: 3;	// LPTIM1_CLK_SRC_t		// tim.h
+	uint32_t			LPTIM345_CLK_src		: 3;	// LPTIM2345_CLK_SRC_t	// tim.h
+	uint32_t			LPTIM2_CLK_src			: 3;	// LPTIM2345_CLK_SRC_t	// tim.h
+
+	uint64_t			USART16_CLK_src			: 3;	// USART_CLK_SRC_t		// uart.h
+	uint64_t			USART234578_CLK_src		: 3;	// USART_CLK_SRC_t		// uart.h
+	uint32_t			LPUART1_CLK_src			: 3;	// LPUART1_CLK_SRC_t	// uart.h
+
+	uint64_t			I2C123_CLK_src			: 2;	// I2C123_CLK_SRC_t		// i2c.h
+	uint64_t			I2C4_CLK_src			: 2;	// I2C4_CLK_SRC_t		// i2c.h
+
+	uint64_t			SDMMC_CLK_src			: 1;	// SDMMC_CLK_SRC_t		// sd_mmc.h
+
+	uint64_t			QSPI_CLK_src			: 2;	// QSPI_CLK_SRC_t		// spi.h
+	uint64_t			SPDIFRX_CLK_src			: 2;	// SPDIFRX_CLK_SRC_t	// spi.h
+	uint64_t			SPI45_CLK_src			: 3;	// SPI45_CLK_SRC_t		// spi.h
+	uint64_t			SPI123_CLK_src			: 3;	// SPI123_CLK_SRC_t		// spi.h
+	uint64_t			SPI6_CLK_src			: 3;	// SPI6_CLK_SRC_t		// spi.h
+
+	uint64_t			FMC_CLK_src				: 2;	// FMC_CLK_SRC_t		// fmc.h
+
+	uint64_t			SWPMI_CLK_src			: 1;	// SWPMI_CLK_SRC_t		// swpmi.h
+
+	uint64_t			FDCAN_CLK_src			: 2;	// FDCAN_CLK_SRC_t		// can.h
+
+	uint64_t			DFSDM1_CLK_src			: 1;	// DFSDM1_CLK_SRC_t		// dfsdm.h
+
+	uint64_t			SAR_ADC_CLK_src			: 2;	// SAR_ADC_CLK_SRC_t	// adc.h
+
+	uint64_t			SAI23_CLK_src			: 3;	// SAI_CLK_SRC_t		// sai.h
+	uint64_t			SAI1_CLK_src			: 3;	// SAI_CLK_SRC_t		// sai.h
+	uint32_t			SAI4B_CLK_src			: 3;	// SAI4_CLK_SRC_t		// sai.h
+	uint32_t			SAI4A_CLK_src			: 3;	// SAI4_CLK_SRC_t		// sai.h
+
+	uint64_t			HDMI_CEC_CLK_src		: 2;	// HDMI_CEC_CLK_SRC_t	// hdmi.h
+
+	uint64_t			USB_OTG12_CLK_src		: 2;	// USB_OTG12_CLK_SRC_t	// usb.h
+	uint64_t			RNG_CLK_src				: 2;	// RNG_CLK_SRC_t		// rng.h
+
 	// Systick
 	uint32_t			SYSTICK_enable			: 1;
 	uint32_t			SYSTICK_IRQ_enable		: 1;
 	uint32_t			SYSTICK_CLK_src			: 1;	// SYSTICK_CLK_SRC_t
-	// MCO
-	uint32_t			MCO2_CLK_src			: 3;	// MCO2_CLK_SRC_t
-	uint32_t			MCO2_CLK_prescaler		: 4;
-	uint32_t			MCO1_CLK_src			: 3;	// MCO1_CLK_SRC_t
-	uint32_t			MCO1_CLK_prescaler		: 4;
 } SYS_CLK_Config_t;		// 352 bit -> 44 byte
 
 
@@ -502,10 +491,6 @@ void set_domain_config(
 void set_systick_config(
 	SYS_CLK_Config_t* config,				uint8_t SYSTICK_enable,
 	uint8_t SYSTICK_IRQ_enable,				SYSTICK_CLK_SRC_t SYSTICK_CLK_src
-);
-void set_MCO_config(
-	SYS_CLK_Config_t* config,				MCO1_CLK_SRC_t MCO1_CLK_src,			uint8_t MCO1_CLK_prescaler,
-	MCO2_CLK_SRC_t MCO2_CLK_src,			uint8_t MCO2_CLK_prescaler
 );
 // TODO: peripheral kernel clocks
 

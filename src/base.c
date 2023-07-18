@@ -11,9 +11,9 @@
 void enable_dev(void* dev) {
 	dev_id_t id = dev_to_id(dev);
 	if (id.clk == DEV_CLOCK_NONE) { return; }
-	uint32_t mask = (0b1UL << (id.dev & 0b11111UL));
+	uint32_t mask = (0b1UL << (id.num & 0b11111UL));
 	volatile uint32_t* reg; switch (id.clk) {
-		case DEV_CLOCK_ID_APB1: reg = ((&RCC->APB1LENR) + ((id.dev >> 5) & 0b1UL)); break;
+		case DEV_CLOCK_ID_APB1: reg = ((&RCC->APB1LENR) + ((id.num >> 5) & 0b1UL)); break;
 		case DEV_CLOCK_ID_APB2: reg = &RCC->APB2ENR; break;
 		case DEV_CLOCK_ID_AHB1: reg = &RCC->AHB1ENR; break;
 		case DEV_CLOCK_ID_AHB2: reg = &RCC->AHB2ENR; break;
@@ -26,9 +26,9 @@ void enable_dev(void* dev) {
 void disable_dev(void* dev) {
 	dev_id_t id = dev_to_id(dev);
 	if (id.clk == DEV_CLOCK_NONE) { return; }
-	uint32_t mask = (0b1UL << (id.dev & 0b11111UL));
+	uint32_t mask = (0b1UL << (id.num & 0b11111UL));
 	volatile uint32_t* reg; switch (id.clk) {
-		case DEV_CLOCK_ID_APB1: reg = ((&RCC->APB1LRSTR) + ((id.dev >> 5) & 0b1UL)); break;
+		case DEV_CLOCK_ID_APB1: reg = ((&RCC->APB1LRSTR) + ((id.num >> 5) & 0b1UL)); break;
 		case DEV_CLOCK_ID_APB2: reg = &RCC->APB2RSTR; break;
 		case DEV_CLOCK_ID_AHB1: reg = &RCC->AHB1RSTR; break;
 		case DEV_CLOCK_ID_AHB2: reg = &RCC->AHB2RSTR; break;
@@ -52,14 +52,14 @@ dev_id_t dev_to_id(void* dev) {
 }
 void* id_to_dev(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_NONE)		{ return NULL; }
-	if (id.clk == DEV_CLOCK_ID_APB1)	{ return (void*)((id.dev << 10) + APB1_BASE); }
-	if (id.clk == DEV_CLOCK_ID_APB2)	{ return (void*)((id.dev << 10) + APB2_BASE); }
-	if (id.clk == DEV_CLOCK_ID_AHB1)	{ return (void*)((id.dev << 10) + AHB1_BASE); }
-	if (id.clk == DEV_CLOCK_ID_AHB2)	{ return (void*)((id.dev << 10) + AHB2_BASE); }
-	if (id.clk == DEV_CLOCK_ID_APB3)	{ return (void*)((id.dev << 10) + APB3_BASE); }
-	if (id.clk == DEV_CLOCK_ID_AHB3)	{ return (void*)((id.dev << 10) + AHB3_BASE); }
-	if (id.clk == DEV_CLOCK_ID_APB4)	{ return (void*)((id.dev << 10) + APB4_BASE); }
-	return (void*)((id.dev << 10) + AHB4_BASE);
+	if (id.clk == DEV_CLOCK_ID_APB1)	{ return (void*)((id.num << 10) + APB1_BASE); }
+	if (id.clk == DEV_CLOCK_ID_APB2)	{ return (void*)((id.num << 10) + APB2_BASE); }
+	if (id.clk == DEV_CLOCK_ID_AHB1)	{ return (void*)((id.num << 10) + AHB1_BASE); }
+	if (id.clk == DEV_CLOCK_ID_AHB2)	{ return (void*)((id.num << 10) + AHB2_BASE); }
+	if (id.clk == DEV_CLOCK_ID_APB3)	{ return (void*)((id.num << 10) + APB3_BASE); }
+	if (id.clk == DEV_CLOCK_ID_AHB3)	{ return (void*)((id.num << 10) + AHB3_BASE); }
+	if (id.clk == DEV_CLOCK_ID_APB4)	{ return (void*)((id.num << 10) + APB4_BASE); }
+	return (void*)((id.num << 10) + AHB4_BASE);
 }
 
 uint8_t dev_to_int(void* dev) {

@@ -23,7 +23,7 @@ typedef enum {
 } dev_clock_id_t;
 
 typedef struct {
-	uint16_t	dev: 5;		// 1024
+	uint16_t	num: 5;		// 1024
 	uint16_t	clk: 5;		// dev_clock_id_t
 	uint16_t	sub: 6;		// sub device info
 } dev_id_t;  // 16 bit

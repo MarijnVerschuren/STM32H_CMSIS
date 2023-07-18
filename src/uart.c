@@ -20,7 +20,7 @@ typedef struct {
  * static
  * */
 static inline uint16_t UART_division(dev_clock_id_t clk, uint32_t baud) {
-	switch (clk) {
+	switch (clk) {  // TODO: create and use peripheral kernel clock frequency variables (clock can still be used to determine what kernel clock is used)
 		case DEV_CLOCK_ID_APB1:	return APB1_clock_frequency / baud;
 		case DEV_CLOCK_ID_APB2: return APB2_clock_frequency / baud;
 		case DEV_CLOCK_ID_APB4: return APB4_clock_frequency / baud;

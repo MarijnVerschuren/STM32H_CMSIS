@@ -158,16 +158,6 @@ void set_systick_config(
 	config->SYSTICK_CLK_src =		SYSTICK_CLK_src;
 }
 
-void set_MCO_config(
-	SYS_CLK_Config_t* config,				MCO1_CLK_SRC_t MCO1_CLK_src,			uint8_t MCO1_CLK_prescaler,
-	MCO2_CLK_SRC_t MCO2_CLK_src,			uint8_t MCO2_CLK_prescaler
-) {
-	config->MCO1_CLK_src =			MCO1_CLK_src;
-	config->MCO1_CLK_prescaler =	MCO1_CLK_prescaler;
-	config->MCO2_CLK_src =			MCO2_CLK_src;
-	config->MCO2_CLK_prescaler =	MCO2_CLK_prescaler;
-}
-
 
 /*!<
  * init
@@ -370,10 +360,6 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	FLASH->ACR |= (config->FLASH_latency << FLASH_ACR_LATENCY_Pos);
 	//!< switch sys-clock
 	RCC->CFGR = (
-			(config->MCO2_CLK_src << RCC_CFGR_MCO2_Pos)						|
-			(config->MCO2_CLK_prescaler << RCC_CFGR_MCO2PRE_Pos)			|
-			(config->MCO1_CLK_src << RCC_CFGR_MCO1_Pos)						|
-			(config->MCO1_CLK_prescaler << RCC_CFGR_MCO1PRE_Pos)			|
 			(config->TIM_prescaler << RCC_CFGR_TIMPRE_Pos)					|
 			(config->HRTIM_src << RCC_CFGR_HRTIMSEL_Pos)					|
 			(config->RTC_HSE_prescaler << RCC_CFGR_RTCPRE_Pos)

@@ -78,10 +78,6 @@ int main(void) {
 	set_systick_config(
 			sys_config, 1, 1, SYSTICK_CLK_SRC_AXI_CLK_DIV_1	// SysTick (IRQ) enable at 200MHz
 	);
-	set_MCO_config(
-			sys_config, MCO1_CLK_SRC_PLL1_Q, 1,				// output PLL1_Q	(50MHz)
-			MCO2_CLK_SRC_PLL1_P, 1							// output PLL1_P	(400MHz)
-	);
 	sys_clock_init(sys_config);
 
 	// TIM config
@@ -98,7 +94,7 @@ int main(void) {
 	start_EXTI(9);
 
 	// MCO config
-	config_MCO(MCO2_C9);
+	config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);
 
 	// PWM config
 	config_PWM(TIM1_CH1_A8, 200, 20000);  // 50Hz

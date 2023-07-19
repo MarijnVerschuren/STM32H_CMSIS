@@ -1,14 +1,15 @@
-#include "main.h"
-#include "sys.h"
 #include "gpio.h"
-#include "mco.h"
-#include "tim.h"
 #include "exti.h"
+#include "tim.h"
 #include "pwm.h"
-#include "crc.h"
 #include "encoder.h"
 #include "usart.h"
+#include "i2c.h"
+#include "usb.h"
+#include "crc.h"
+#include "rng.h"
 #include "watchdog.h"
+#include "mco.h"
 
 
 #if defined(STM32H7xx)
@@ -49,8 +50,8 @@ int main(void) {
 	set_PLL_config(
 			&sys_config->PLL1_config, 1, 1, 1, 0, 0,		// enable PLL1 (P, Q)
 			PLL_IN_8MHz_16MHz, PLL_VCO_WIDE,				// 12.5MHz in, 192MHz < VCO < 960MHz
-			2/*M*/, 2/*P*/, 16/*Q*/, 2/*R*/, 64/*N*/, 0		// M = 2, P = 2, Q = 16, R = 2, N = 64, N_frac = 0
-	);  // 25MHz / 2 * 64 / (2, 16, 2)
+			2/*M*/, 2/*P*/, 4/*Q*/, 2/*R*/, 64/*N*/, 0		// M = 2, P = 2, Q = 4, R = 2, N = 64, N_frac = 0
+	);  // 25MHz / 2 * 64 / (2, 4, 2)
 	set_PLL_config(
 			&sys_config->PLL2_config, 1, 1, 0, 1, 0,		// enable PLL2 (P, R)
 			PLL_IN_8MHz_16MHz, PLL_VCO_WIDE,				// 12.5MHz in, 192MHz < VCO < 960MHz
@@ -63,7 +64,7 @@ int main(void) {
 	);  // 25MHz / 2 * 64 / (2, 2, 2)
 	set_RTC_config(sys_config, 0, RCC_SRC_DISABLED, 0);		// disable RTC
 	set_clock_config(
-			sys_config, 0, 1, 0, 0, 0, 0,					// disable HSI, enable HSE
+			sys_config, 0, 1, 0, 0, 0, 1,					// disable HSI, enable HSE, enable HSI48
 			0, 0, 1, 0, HSI_DIV_1, 25000000,				// enable HSE_CSS, HSE_freq = 25MHz
 			PLL_SRC_HSE										// set HSE as PLL source clock
 	);
@@ -98,10 +99,10 @@ int main(void) {
 	start_EXTI(9);
 
 	// MCO config
-	config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);
+	config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);  // 400 MHz
 
 	// PWM config
-	config_PWM(TIM1_CH1_A8, 200, 20000);  // 50Hz
+	config_PWM(TIM1_CH1_A8, TIM_APB2_kernel_frequency / 1000000, 20000);  // 50Hz
 
 	// CRC config
 	config_CRC();
@@ -113,15 +114,19 @@ int main(void) {
 	// TODO: [4]
 
 	// RNG config
+	config_RNG_kernel_clock(RNG_CLK_SRC_PLL1_Q);  // 200 MHz
 	// TODO: [5]
 
 	// UART config
+	config_USART_kernel_clocks(USART_CLK_SRC_APBx, USART_CLK_SRC_APBx, USART_CLK_SRC_APBx);
 	config_UART(USART1_TX_A9, USART1_RX_A10, 115200, 1);
 
 	// I2C config
+	config_I2C_kernel_clocks(I2C_CLK_SRC_APBx, I2C_CLK_SRC_APBx);
 	// TODO: [1]
 
-	// OTG config
+	// USB config
+	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	// TODO: [2]
 
 	// Watchdog config (32kHz / (4 << prescaler))

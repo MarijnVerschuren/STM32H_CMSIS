@@ -143,181 +143,11 @@ typedef enum {
 
 //!< PERIPHERALS
 typedef enum {
-	TIM_DIV_2 =						0b0,	//R	// rcc_hclk1 if D2PPREx is 1 or 2 else 2 x rcc_plckx_d2
-	TIM_DIV_4 =						0b1			// rcc_hclk1 if D2PPREx is 1, 2 or 4 else 4 x rcc_plckx_d2
-} TIM_PRE_t;			// 1 bit
-
-typedef enum {
-	HRTIM_SRC_APB2 =				0b0,	//R
-	HRTIM_SRC_CPU =					0b1
-} HRTIM_SRC_t;			// 1 bit
-
-typedef enum {
-	PER_SRC_HSI_KER =				0b00,	//R
-	PER_SRC_CSI_KER =				0b01,
+	PER_SRC_HSI =					0b00,	//R
+	PER_SRC_CSI =					0b01,
 	PER_SRC_HSE =					0b10,
 	PER_SRC_DISABLED =				0b11
 } PER_SRC_t;			// 2 bit
-
-typedef enum {
-	SDMMC_CLK_SRC_PLL1_Q = 			0b0,	//R
-	SDMMC_CLK_SRC_PLL2_R = 			0b1
-} SDMMC_CLK_SRC_t;		// 1 bit
-
-typedef enum {
-	QSPI_CLK_SRC_AHB3 =				0b00,	//R
-	QSPI_CLK_SRC_PLL1_Q =			0b01,
-	QSPI_CLK_SRC_PLL2_R =			0b10,
-	QSPI_CLK_SRC_PER =				0b11
-} QSPI_CLK_SRC_t;		// 2 bit
-
-typedef enum {
-	FMC_CLK_SRC_AHB3 =				0b00,	//R
-	FMC_CLK_SRC_PLL1_Q =			0b01,
-	FMC_CLK_SRC_PLL2_R =			0b10,
-	FMC_CLK_SRC_PER =				0b11
-} FMC_CLK_SRC_t;		// 2 bit
-
-typedef enum {
-	SWPMI_CLK_SRC_APB1 =			0b0,	//R
-	SWPMI_CLK_SRC_HSI_KER =			0b1
-} SWPMI_CLK_SRC_t;		// 1 bit
-
-typedef enum {
-	FDCAN_CLK_SRC_HSE =				0b00,	//R
-	FDCAN_CLK_SRC_PLL1_Q =			0b01,
-	FDCAN_CLK_SRC_PLL2_Q =			0b10
-} FDCAN_CLK_SRC_t;		// 2 bit
-
-typedef enum {
-	DFSDM1_CLK_SRC_APB2 =			0b0,	//R
-	DFSDM1_CLK_SRC_SYS =			0b1
-} DFSDM1_CLK_SRC_t;		// 1 bit
-
-typedef enum {
-	SPDIFRX_CLK_SRC_PLL1_Q =		0b00,	//R
-	SPDIFRX_CLK_SRC_PLL2_R =		0b01,
-	SPDIFRX_CLK_SRC_PLL3_R =		0b10,
-	SPDIFRX_CLK_SRC_HSI_KER =		0b11
-} SPDIFRX_CLK_SRC_t;	// 2 bit
-
-typedef enum {
-	SPI45_CLK_SRC_APB2 =			0b000,	//R
-	SPI45_CLK_SRC_PLL2_Q =			0b001,
-	SPI45_CLK_SRC_PLL3_Q =			0b010,
-	SPI45_CLK_SRC_HSI_KER =			0b011,
-	SPI45_CLK_SRC_CSI_KER =			0b100,
-	SPI45_CLK_SRC_HSE =				0b101
-} SPI45_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	SPI123_CLK_SRC_PLL1_Q =			0b000,	//R
-	SPI123_CLK_SRC_PLL2_P =			0b001,
-	SPI123_CLK_SRC_PLL3_P =			0b010,
-	SPI123_CLK_SRC_I2S_CKIN =		0b011,
-	SPI123_CLK_SRC_PER =			0b100
-} SPI123_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	SAI_CLK_SRC_PLL1_Q =			0b000,	//R
-	SAI_CLK_SRC_PLL2_P =			0b001,
-	SAI_CLK_SRC_PLL3_P =			0b010,
-	SAI_CLK_SRC_I2S_CKIN =			0b011,
-	SAI_CLK_SRC_PER =				0b100
-} SAI_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	LPTIM1_CLK_SRC_APB1 =			0b000,	//R
-	LPTIM1_CLK_SRC_PLL2_P =			0b001,
-	LPTIM1_CLK_SRC_PLL3_R =			0b010,
-	LPTIM1_CLK_SRC_LSE =			0b011,
-	LPTIM1_CLK_SRC_LSI =			0b100,
-	LPTIM1_CLK_SRC_PER =			0b101
-} LPTIM1_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	HDMI_CEC_CLK_SRC_LSE =			0b00,	//R
-	HDMI_CEC_CLK_SRC_LSI =			0b01,
-	HDMI_CEC_CLK_SRC_CSI_KER =		0b10,		// csi_ker_ck / 122
-} HDMI_CEC_CLK_SRC_t;	// 2 bit
-
-typedef enum {
-	USB_OTG12_CLK_SRC_DISABLED =	0b00,	//R
-	USB_OTG12_CLK_SRC_PLL1_Q =		0b01,
-	USB_OTG12_CLK_SRC_PLL3_Q =		0b10,
-	USB_OTG12_CLK_SRC_HSI48	=		0b11
-} USB_OTG12_CLK_SRC_t;	// 2 bit
-
-typedef enum {
-	I2C123_CLK_SRC_APB1 =			0b00,	//R
-	I2C123_CLK_SRC_PLL3_R =			0b01,
-	I2C123_CLK_SRC_HSI_KER =		0b10,
-	I2C123_CLK_SRC_CSI_KER =		0b11
-} I2C123_CLK_SRC_t;		// 2 bit
-
-typedef enum {
-	RNG_CLK_SRC_HSI48 =				0b00,	//R
-	RNG_CLK_SRC_PLL1_Q =			0b01,
-	RNG_CLK_SRC_LSE =				0b10,
-	RNG_CLK_SRC_LSI =				0b11
-} RNG_CLK_SRC_t;		// 2 bit
-
-typedef enum {
-	USART16_CLK_SRC_APBx =			0b000,	//R
-	USART16_CLK_SRC_PLL2_Q =		0b001,
-	USART16_CLK_SRC_PLL3_Q =		0b010,
-	USART16_CLK_SRC_HSI_KER =		0b011,
-	USART16_CLK_SRC_CSI_KER =		0b100,
-	USART16_CLK_SRC_LSE =			0b101
-} USART_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	SPI6_CLK_SRC_APB4 =				0b000,	//R
-	SPI6_CLK_SRC_PLL2_Q =			0b001,
-	SPI6_CLK_SRC_PLL3_Q =			0b010,
-	SPI6_CLK_SRC_HSI_KER =			0b011,
-	SPI6_CLK_SRC_CSI_KER =			0b100,
-	SPI6_CLK_SRC_HSE =				0b101
-} SPI6_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	SAI4B_CLK_SRC_PLL1_Q =			0b000,	//R
-	SAI4B_CLK_SRC_PLL2_P =			0b001,
-	SAI4B_CLK_SRC_PLL3_P =			0b010,
-	SAI4B_CLK_SRC_I2S_CKIN =		0b011,
-	SAI4B_CLK_SRC_PER =				0b100
-} SAI4_CLK_SRC_t;		// 3 bit
-
-typedef enum {
-	SAR_ADC_CLK_SRC_PLL2_P =		0b00,	//R
-	SAR_ADC_CLK_SRC_PLL3_R =		0b01,
-	SAR_ADC_CLK_SRC_PER =			0b10
-} SAR_ADC_CLK_SRC_t;	// 2 bit
-
-typedef enum {
-	LPTIM2345_CLK_SRC_APB4 =		0b000,	//R
-	LPTIM2345_CLK_SRC_PLL2_P =		0b001,
-	LPTIM2345_CLK_SRC_PLL3_R =		0b010,
-	LPTIM2345_CLK_SRC_LSE =			0b011,
-	LPTIM2345_CLK_SRC_LSI =			0b100,
-	LPTIM2345_CLK_SRC_PER =			0b101
-} LPTIM2345_CLK_SRC_t;	// 3 bit
-
-typedef enum {
-	I2C4_CLK_SRC_APB4 =				0b00,	//R
-	I2C4_CLK_SRC_PLL3_R =			0b01,
-	I2C4_CLK_SRC_HSI_KER =			0b10,
-	I2C4_CLK_SRC_CSI_KER =			0b11
-} I2C4_CLK_SRC_t;		// 2 bit
-
-typedef enum {
-	LPUART1_CLK_SRC_APB4 =			0b000,	//R
-	LPUART1_CLK_SRC_PLL2_Q =		0b001,
-	LPUART1_CLK_SRC_PLL3_Q =		0b010,
-	LPUART1_CLK_SRC_HSI_KER =		0b011,
-	LPUART1_CLK_SRC_CSI_KER =		0b100,
-	LPUART1_CLK_SRC_LSE =			0b101
-} LPUART1_CLK_SRC_t;	// 3 bit
 
 
 //!< SysTick
@@ -340,7 +170,7 @@ typedef struct {
 	uint64_t			RTC_HSE_prescaler		: 6;
 	// HSI
 	uint64_t			HSI_enable				: 1;
-	uint64_t			HSI_div					: 2;	// HSI_DIV_t
+	uint64_t			HSI_div					: 2;	// HSI_DIV_t  // TODO: this is NOT used??????
 	uint64_t			HSI_enable_stop_mode	: 1;
 	// HSE
 	uint64_t			HSE_enable				: 1;
@@ -365,58 +195,16 @@ typedef struct {
 	uint64_t			FLASH_latency			: 4;	// FLASH_LATENCY_t
 	// Domains
 	uint64_t			APB3_prescaler			: 3;	// APB_CLK_PRE_t	domain 1
-	uint64_t			AHB_prescaler			: 4;	// AHB_CLK_PRE_t	AHB/AXI clocks
-	uint64_t			APB2_prescaler			: 3;	// APB_CLK_PRE_t	domain 2
-	uint64_t			APB1_prescaler			: 3;	// APB_CLK_PRE_t	domain 2
-	uint64_t			APB4_prescaler			: 3;	// APB_CLK_PRE_t	domain 3
-	uint64_t			PER_src					: 2;	// PER_SRC_t
-	// Peripherals : 64  // TODO: move all these settings to the respective peripheral files
-	uint64_t			TIM_prescaler			: 1;	// TIM_PRE_t			// tim.h
-	uint64_t			HRTIM_src				: 1;	// HRTIM_SRC_t			// tim.h
-	uint64_t			LPTIM1_CLK_src			: 3;	// LPTIM1_CLK_SRC_t		// tim.h
-	uint32_t			LPTIM345_CLK_src		: 3;	// LPTIM2345_CLK_SRC_t	// tim.h
-	uint32_t			LPTIM2_CLK_src			: 3;	// LPTIM2345_CLK_SRC_t	// tim.h
-
-	uint64_t			USART16_CLK_src			: 3;	// USART_CLK_SRC_t		// uart.h
-	uint64_t			USART234578_CLK_src		: 3;	// USART_CLK_SRC_t		// uart.h
-	uint32_t			LPUART1_CLK_src			: 3;	// LPUART1_CLK_SRC_t	// uart.h
-
-	uint64_t			I2C123_CLK_src			: 2;	// I2C123_CLK_SRC_t		// i2c.h
-	uint64_t			I2C4_CLK_src			: 2;	// I2C4_CLK_SRC_t		// i2c.h
-
-	uint64_t			SDMMC_CLK_src			: 1;	// SDMMC_CLK_SRC_t		// sd_mmc.h
-
-	uint64_t			QSPI_CLK_src			: 2;	// QSPI_CLK_SRC_t		// spi.h
-	uint64_t			SPDIFRX_CLK_src			: 2;	// SPDIFRX_CLK_SRC_t	// spi.h
-	uint64_t			SPI45_CLK_src			: 3;	// SPI45_CLK_SRC_t		// spi.h
-	uint64_t			SPI123_CLK_src			: 3;	// SPI123_CLK_SRC_t		// spi.h
-	uint64_t			SPI6_CLK_src			: 3;	// SPI6_CLK_SRC_t		// spi.h
-
-	uint64_t			FMC_CLK_src				: 2;	// FMC_CLK_SRC_t		// fmc.h
-
-	uint64_t			SWPMI_CLK_src			: 1;	// SWPMI_CLK_SRC_t		// swpmi.h
-
-	uint64_t			FDCAN_CLK_src			: 2;	// FDCAN_CLK_SRC_t		// can.h
-
-	uint64_t			DFSDM1_CLK_src			: 1;	// DFSDM1_CLK_SRC_t		// dfsdm.h
-
-	uint64_t			SAR_ADC_CLK_src			: 2;	// SAR_ADC_CLK_SRC_t	// adc.h
-
-	uint64_t			SAI23_CLK_src			: 3;	// SAI_CLK_SRC_t		// sai.h
-	uint64_t			SAI1_CLK_src			: 3;	// SAI_CLK_SRC_t		// sai.h
-	uint32_t			SAI4B_CLK_src			: 3;	// SAI4_CLK_SRC_t		// sai.h
-	uint32_t			SAI4A_CLK_src			: 3;	// SAI4_CLK_SRC_t		// sai.h
-
-	uint64_t			HDMI_CEC_CLK_src		: 2;	// HDMI_CEC_CLK_SRC_t	// hdmi.h
-
-	uint64_t			USB_OTG12_CLK_src		: 2;	// USB_OTG12_CLK_SRC_t	// usb.h
-	uint64_t			RNG_CLK_src				: 2;	// RNG_CLK_SRC_t		// rng.h
-
+	uint32_t			AHB_prescaler			: 4;	// AHB_CLK_PRE_t	AHB/AXI clocks
+	uint32_t			APB2_prescaler			: 3;	// APB_CLK_PRE_t	domain 2
+	uint32_t			APB1_prescaler			: 3;	// APB_CLK_PRE_t	domain 2
+	uint32_t			APB4_prescaler			: 3;	// APB_CLK_PRE_t	domain 3
+	uint32_t			PER_src					: 2;	// PER_SRC_t
 	// Systick
 	uint32_t			SYSTICK_enable			: 1;
 	uint32_t			SYSTICK_IRQ_enable		: 1;
 	uint32_t			SYSTICK_CLK_src			: 1;	// SYSTICK_CLK_SRC_t
-} SYS_CLK_Config_t;		// 352 bit -> 44 byte
+} SYS_CLK_Config_t;		// 288 bit (14 bit reserved)
 
 
 /*!<
@@ -442,6 +230,7 @@ extern uint32_t PLL2_R_clock_frequency;
 extern uint32_t PLL3_P_clock_frequency;
 extern uint32_t PLL3_Q_clock_frequency;
 extern uint32_t PLL3_R_clock_frequency;
+extern uint32_t PER_clock_frequency;
 extern uint32_t AHB_clock_frequency;
 extern uint32_t APB1_clock_frequency;
 extern uint32_t APB2_clock_frequency;
@@ -493,14 +282,12 @@ void set_systick_config(
 	SYS_CLK_Config_t* config,				uint8_t SYSTICK_enable,
 	uint8_t SYSTICK_IRQ_enable,				SYSTICK_CLK_SRC_t SYSTICK_CLK_src
 );
-// TODO: peripheral kernel clocks
 
 
 /*!<
  * init
  * */
 void IRQ_callback_init(IRQ_callback_t sys_tick_callback, IRQ_callback_t clock_fault_callback);
-void peripheral_kernel_clock_init(SYS_CLK_Config_t* config);  // set peripherals kernel clock config
 void sys_clock_init(SYS_CLK_Config_t* config);
 
 

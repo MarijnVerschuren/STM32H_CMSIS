@@ -2,7 +2,7 @@
 // Created by marijn on 7/10/23.
 //
 
-#include "uart.h"
+#include "usart.h"
 
 
 /*!<
@@ -17,13 +17,21 @@ typedef struct {
 
 
 /*!<
+ * variables
+ * */
+uint32_t USART16_kernel_frequency =		0;
+uint32_t USART234578_kernel_frequency =	0;
+uint32_t LPUART1_kernel_frequency =		0;
+
+
+/*!<
  * static
  * */
 static inline uint16_t UART_division(dev_clock_id_t clk, uint32_t baud) {
-	switch (clk) {  // TODO: create and use peripheral kernel clock frequency variables (clock can still be used to determine what kernel clock is used)
-		case DEV_CLOCK_ID_APB1:	return APB1_clock_frequency / baud;
-		case DEV_CLOCK_ID_APB2: return APB2_clock_frequency / baud;
-		case DEV_CLOCK_ID_APB4: return APB4_clock_frequency / baud;
+	switch (clk) {
+		case DEV_CLOCK_ID_APB1:	return USART16_kernel_frequency / baud;
+		case DEV_CLOCK_ID_APB2: return USART234578_kernel_frequency / baud;
+		case DEV_CLOCK_ID_APB4: return LPUART1_kernel_frequency / baud;
 	} return 0;
 }
 
@@ -49,10 +57,45 @@ USART_IRQ_IO_t uart_buf_lp1;	extern void LPUART1_IRQHandler(void)	{ UART_irq_han
 /*!<
  * init
  * */
+void config_USART_kernel_clocks(USART_CLK_SRC_t usart16_src, USART_CLK_SRC_t usart234578_src, USART_CLK_SRC_t lpuart1_src) {
+	RCC->D2CCIP2R &= ~(
+			RCC_D2CCIP2R_USART16SEL |
+			RCC_D2CCIP2R_USART28SEL
+	);
+	RCC->D2CCIP2R |= (
+			(usart16_src << RCC_D2CCIP2R_USART16SEL_Pos) |
+			(usart234578_src << RCC_D2CCIP2R_USART28SEL_Pos)
+	);
+	RCC->D3CCIPR &= ~RCC_D3CCIPR_LPUART1SEL;
+	RCC->D3CCIPR |=	lpuart1_src << RCC_D3CCIPR_LPUART1SEL_Pos;
+	switch (usart16_src) {
+		case USART_CLK_SRC_APBx:	USART16_kernel_frequency = APB2_clock_frequency; break;		// APB2
+		case USART_CLK_SRC_PLL2_Q:	USART16_kernel_frequency = PLL2_Q_clock_frequency; break;
+		case USART_CLK_SRC_PLL3_Q:	USART16_kernel_frequency = PLL3_Q_clock_frequency; break;
+		case USART_CLK_SRC_HSI:		USART16_kernel_frequency = HSI_clock_frequency; break;
+		case USART_CLK_SRC_CSI:		USART16_kernel_frequency = CSI_clock_frequency; break;
+		case USART_CLK_SRC_LSE:		USART16_kernel_frequency = LSE_clock_frequency; break;
+	}	switch (usart234578_src) {
+		case USART_CLK_SRC_APBx:	USART234578_kernel_frequency = APB1_clock_frequency; break;	// APB1
+		case USART_CLK_SRC_PLL2_Q:	USART234578_kernel_frequency = PLL2_Q_clock_frequency; break;
+		case USART_CLK_SRC_PLL3_Q:	USART234578_kernel_frequency = PLL3_Q_clock_frequency; break;
+		case USART_CLK_SRC_HSI:		USART234578_kernel_frequency = HSI_clock_frequency; break;
+		case USART_CLK_SRC_CSI:		USART234578_kernel_frequency = CSI_clock_frequency; break;
+		case USART_CLK_SRC_LSE:		USART234578_kernel_frequency = LSE_clock_frequency; break;
+	}	switch (lpuart1_src) {
+		case USART_CLK_SRC_APBx:	LPUART1_kernel_frequency = APB4_clock_frequency; return;	// APB4
+		case USART_CLK_SRC_PLL2_Q:	LPUART1_kernel_frequency = PLL2_Q_clock_frequency; return;
+		case USART_CLK_SRC_PLL3_Q:	LPUART1_kernel_frequency = PLL3_Q_clock_frequency; return;
+		case USART_CLK_SRC_HSI:		LPUART1_kernel_frequency = HSI_clock_frequency; return;
+		case USART_CLK_SRC_CSI:		LPUART1_kernel_frequency = CSI_clock_frequency; return;
+		case USART_CLK_SRC_LSE:		LPUART1_kernel_frequency = LSE_clock_frequency; return;
+	}
+}
+
 void fconfig_UART(
-		UART_GPIO_t tx, UART_GPIO_t rx, uint32_t baud, uint8_t fifo,
-		UART_stop_bit_t stop, UART_parity_t parity, uint8_t msb_first,
-		UART_oversampling_t oversampling, UART_word_length_t word_length
+		USART_GPIO_t tx, USART_GPIO_t rx, uint32_t baud, uint8_t fifo,
+		USART_stop_bit_t stop, USART_parity_t parity, uint8_t msb_first,
+		USART_oversampling_t oversampling, USART_word_length_t word_length
 ) {
 	uint8_t			tx_enable = tx != UART_PIN_DISABLE,			rx_enable = rx != UART_PIN_DISABLE;
 	dev_pin_t		tx_dev = *((dev_pin_t*)&tx),				rx_dev = *((dev_pin_t*)&rx);
@@ -87,10 +130,10 @@ void fconfig_UART(
 	);
 }
 
-void config_UART(UART_GPIO_t tx, UART_GPIO_t rx, uint32_t baud, uint8_t fifo) {
+void config_UART(USART_GPIO_t tx, USART_GPIO_t rx, uint32_t baud, uint8_t fifo) {
 	fconfig_UART(
-			tx, rx, baud, fifo, UART_STOP_BIT_1, UART_PARITY_DISABLED,
-			0, UART_OVERSAMPLING_16, UART_WORD_LENGTH_8
+			tx, rx, baud, fifo, USART_STOP_BIT_1, USART_PARITY_DISABLED,
+			0, USART_OVERSAMPLING_16, USART_WORD_LENGTH_8
 	);
 }
 

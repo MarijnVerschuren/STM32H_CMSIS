@@ -7,7 +7,7 @@
 #include "pwm.h"
 #include "crc.h"
 #include "encoder.h"
-#include "uart.h"
+#include "usart.h"
 #include "watchdog.h"
 
 
@@ -81,7 +81,11 @@ int main(void) {
 	sys_clock_init(sys_config);
 
 	// TIM config
-	config_TIM(TIM8, 20000, 10000);
+	config_TIM_kernel_clocks(
+			TIM_MUL_2, HRTIM_SRC_CPU, LPTIM1_CLK_SRC_APB1,
+			LPTIM2345_CLK_SRC_APB4, LPTIM2345_CLK_SRC_APB4
+	);
+	config_TIM(TIM8, TIM_APB2_kernel_frequency / 10000, 10000);  // 1 Hz
 	start_TIM_update_irq(TIM8);
 	start_TIM(TIM8);
 
@@ -112,7 +116,7 @@ int main(void) {
 	// TODO: [5]
 
 	// UART config
-	config_UART(UART1_TX_A9, UART1_RX_A10, 115200, 1);
+	config_UART(USART1_TX_A9, USART1_RX_A10, 115200, 1);
 
 	// I2C config
 	// TODO: [1]

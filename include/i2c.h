@@ -13,6 +13,13 @@
  * types
  * */
 typedef enum {
+	I2C_CLK_SRC_APBx =		0b00,	//R
+	I2C_CLK_SRC_PLL3_R =	0b01,
+	I2C_CLK_SRC_HSI =		0b10,
+	I2C_CLK_SRC_CSI =		0b11
+} I2C_CLK_SRC_t;
+
+typedef enum {
 	I2C_PIN_DISABLE =	0x00000000,
 	// I2C1
 	I2C1_SMBA_B5 =		0x05140015,		I2C1_SCL_B6 =		0x06140015,
@@ -46,8 +53,16 @@ typedef enum {
 
 
 /*!<
+ * variables
+ * */
+extern uint32_t I2C123_kernel_frequency;
+extern uint32_t I2C4_kernel_frequency;
+
+
+/*!<
  * init
  * */
+void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src);
 void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address);
 void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, uint8_t own_address);
 

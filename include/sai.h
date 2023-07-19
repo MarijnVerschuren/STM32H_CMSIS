@@ -40,7 +40,7 @@ extern uint32_t SPDIFRX_kernel_frequency;
 /*!<
  * init
  * */
-void config__kernel_clocks(
+void config_SAI_kernel_clocks(
 		SAI_CLK_SRC_t sai1_src, SAI_CLK_SRC_t sai23_src,
 		SAI_CLK_SRC_t sai4a_src, SAI_CLK_SRC_t sai4b_src,
 		SPDIFRX_CLK_SRC_t spdifrx_src

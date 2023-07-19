@@ -82,8 +82,8 @@ int main(void) {
 
 	// TIM config
 	config_TIM_kernel_clocks(
-			TIM_MUL_2, HRTIM_SRC_CPU, LPTIM1_CLK_SRC_APB1,
-			LPTIM2345_CLK_SRC_APB4, LPTIM2345_CLK_SRC_APB4
+			TIM_MUL_2, HRTIM_SRC_CPU, LPTIM_CLK_SRC_APBx,
+			LPTIM_CLK_SRC_APBx, LPTIM_CLK_SRC_APBx
 	);
 	config_TIM(TIM8, TIM_APB2_kernel_frequency / 10000, 10000);  // 1 Hz
 	start_TIM_update_irq(TIM8);

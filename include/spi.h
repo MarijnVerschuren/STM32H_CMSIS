@@ -48,7 +48,7 @@ extern uint32_t QSPI_kernel_frequency;
 /*!<
  * init
  * */
-void config__kernel_clocks(
+void config_SPI_kernel_clocks(
 		SPI123_CLK_SRC_t spi123_src, SPI456_CLK_SRC_t spi45_src,
 		SPI456_CLK_SRC_t spi6_src, QSPI_CLK_SRC_t qspi_src
 );

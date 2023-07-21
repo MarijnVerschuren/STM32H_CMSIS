@@ -47,6 +47,13 @@ typedef enum {
 } I2C_GPIO_t;
 
 typedef enum {
+	I2C_SM_FREQUENCY_10KHZ =	0b00,	//R
+	I2C_SM_FREQUENCY_100KHZ =	0b01,
+	I2C_FM_FREQUENCY_400KHZ =	0b10,
+	I2C_FMP_FREQUENCY_1MHZ =	0b11,
+} I2C_frequency_t;
+
+typedef enum {
 	I2C_ADDR_7BIT =		0b0u,
 	I2C_ADDR_10BIT =	0b1u,
 } I2C_address_t;
@@ -63,8 +70,8 @@ extern uint32_t I2C4_kernel_frequency;
  * init
  * */
 void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src);
-void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address);
-void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, uint8_t own_address);
+void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_t freq, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address,  uint8_t dual_mask);
+void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_t freq, uint8_t own_address);
 
 
 #endif //STM32H_CMSIS_I2C_H

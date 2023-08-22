@@ -59,19 +59,50 @@ typedef enum {
 } I2C_address_t;
 
 
+typedef struct {
+	uint32_t target;
+	uint8_t scl_l_pre;
+	uint8_t scl_h_pre;
+	uint8_t sda_delay;
+	uint8_t scl_delay;
+} I2C_frequency_setting_t;
+
+
 /*!<
  * variables
  * */
 extern uint32_t I2C123_kernel_frequency;
 extern uint32_t I2C4_kernel_frequency;
-
+extern uint32_t I2C_peripheral_frequencies[4];
 
 /*!<
  * init
  * */
 void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src);
-void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_t freq, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address,  uint8_t dual_mask);
+void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_setting_t freq, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address,  uint8_t dual_mask);
 void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_t freq, uint8_t own_address);
+
+/*!<
+ * master io
+ * */
+uint8_t I2C_master_address(I2C_TypeDef* i2c, uint8_t i2c_address, uint32_t timeout);																// -> 0 = OK
+uint32_t I2C_master_write(I2C_TypeDef* i2c, uint8_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);							// -> n processed
+uint32_t I2C_master_read(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout);									// -> n processed
+uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);	// -> n processed
+uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout);			// -> n processed
+
+/*!<
+ * slave io
+ * */ /* TODO: fix / implement these
+uint32_t I2C_slave_write(I2C_TypeDef* i2c, const uint8_t* buffer, uint32_t size, uint32_t timeout);
+uint32_t I2C_slave_read(I2C_TypeDef* i2c, uint8_t* buffer, uint32_t size, uint32_t timeout); */
+
+/*!<
+ * slave io irq
+ * */ /*
+uint32_t start_I2C_slave_read_irq(I2C_TypeDef* i2c, io_buffer_t* buffer, uint8_t fifo);
+uint32_t stop_I2C_slave_read_IT(I2C_TypeDef* i2c);
+*/
 
 
 #endif //STM32H_CMSIS_I2C_H

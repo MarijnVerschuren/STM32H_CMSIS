@@ -38,7 +38,7 @@ void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src) 
 		case I2C_CLK_SRC_CSI:		I2C4_kernel_frequency = CSI_clock_frequency; return;
 	}
 }
-void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_setting_t freq, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address, uint8_t dual_mask) {
+void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address, uint8_t dual_mask) {
 	if (scl == I2C_PIN_DISABLE || sda == I2C_PIN_DISABLE) { return; }
 	dev_pin_t		scl_dev = *((dev_pin_t*)&scl),				sda_dev = *((dev_pin_t*)&sda);
 	I2C_TypeDef		*scl_i2c = id_to_dev(scl_dev.dev_id),		*sda_i2c = id_to_dev(sda_dev.dev_id),		*i2c = NULL;
@@ -49,28 +49,18 @@ void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_setting_t freq, u
 	uint8_t i2c_num = I2C_num(i2c);
 
 	uint32_t ker_clk_freq = 0;
-	uint8_t prescaler = 0;
-	I2C_peripheral_frequencies[i2c_num] = 0;
-
 	switch (scl_dev.dev_id.clk) {
 		case DEV_CLOCK_ID_APB1:			ker_clk_freq = I2C123_kernel_frequency;	break;
 		case DEV_CLOCK_ID_APB4:			ker_clk_freq = I2C4_kernel_frequency;	break;
-	}
-
-	prescaler = ker_clk_freq / freq.target;
-	I2C_peripheral_frequencies[i2c_num] = ker_clk_freq / prescaler;
-	if (ker_clk_freq % freq.target) {  // attempt to correct prescaler error
-		freq.scl_l_pre = (double)freq.scl_l_pre * ((double)I2C_peripheral_frequencies[i2c_num] / (double)freq.target);
-		freq.scl_h_pre = (double)freq.scl_h_pre * ((double)I2C_peripheral_frequencies[i2c_num] / (double)freq.target);
-	}
+	} I2C_peripheral_frequencies[i2c_num] = ker_clk_freq / setting.prescaler;
 
 	i2c->CR1 = 0;  // make sure I2C is off
 	i2c->TIMINGR = (
-			(prescaler << I2C_TIMINGR_PRESC_Pos)		|
-			(freq.scl_delay << I2C_TIMINGR_SCLDEL_Pos)	|
-			(freq.sda_delay << I2C_TIMINGR_SDADEL_Pos)	|
-			(freq.scl_h_pre << I2C_TIMINGR_SCLH_Pos)	|
-			(freq.scl_l_pre << I2C_TIMINGR_SCLL_Pos)
+			(setting.prescaler << I2C_TIMINGR_PRESC_Pos)	|
+			(setting.scl_delay << I2C_TIMINGR_SCLDEL_Pos)	|
+			(setting.sda_delay << I2C_TIMINGR_SDADEL_Pos)	|
+			(setting.scl_h_pre << I2C_TIMINGR_SCLH_Pos)		|
+			(setting.scl_l_pre << I2C_TIMINGR_SCLL_Pos)
 	);
 	i2c->CR2 = (
 			I2C_CR2_AUTOEND	|  // TODO: setting?
@@ -89,45 +79,7 @@ void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_setting_t freq, u
 	i2c->CR1 |= I2C_CR1_PE;  // turn I2C on
 }
 
-void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_frequency_t freq, uint8_t own_address) {
-	uint8_t i2c_num = I2C_num(
-		pin_to_dev(*((dev_pin_t*)&scl))
-	);
-	I2C_frequency_setting_t setting;
-
-	SYSCFG->PMCR &= ~(0b1UL << i2c_num);
-	switch (freq) {
-		case I2C_SM_FREQUENCY_10KHZ:
-			setting.target =	4000000;
-			setting.scl_l_pre =	0xC7U;	// 50 us	@ 4Mhz
-			setting.scl_h_pre =	0xC3U;	// 49 us	@ 4Mhz
-			setting.sda_delay =	2;
-			setting.scl_delay =	4;
-			break;
-		case I2C_SM_FREQUENCY_100KHZ:
-			setting.target =	4000000;
-			setting.scl_l_pre =	0x13U;	// 5 us		@ 4Mhz
-			setting.scl_h_pre =	0x0FU;	// 4 us		@ 4Mhz
-			setting.sda_delay =	2;
-			setting.scl_delay =	4;
-			break;
-		case I2C_FM_FREQUENCY_400KHZ:
-			setting.target =	8000000;
-			setting.scl_l_pre =	0x09U;	// 1250 ns	@ 8Mhz
-			setting.scl_h_pre =	0x03U;	// 500 ns	@ 8Mhz
-			setting.sda_delay =	2;
-			setting.scl_delay =	3;
-			// enable FM?
-			break;
-		case I2C_FMP_FREQUENCY_1MHZ:
-			setting.target =	16000000;
-			setting.scl_l_pre =	0x07U;	// 500 ns	@ 8Mhz
-			setting.scl_h_pre =	0x03U;	// 250 ns	@ 8Mhz
-			setting.sda_delay =	0;
-			setting.scl_delay =	2;
-			SYSCFG->PMCR |= (0b1UL << i2c_num);  // enable FM+
-			break;
-	}
+void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t own_address) {
 	fconfig_I2C(scl, sda, setting, own_address, I2C_ADDR_7BIT, 0, 0);
 }
 

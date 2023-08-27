@@ -123,7 +123,11 @@ int main(void) {
 
 	// I2C config
 	config_I2C_kernel_clocks(I2C_CLK_SRC_APBx, I2C_CLK_SRC_APBx);
-	// TODO: [1]
+	I2C_setting_t I2C_setting = {  // 100 KHz
+			APB1_clock_frequency / 4000000,
+			0x13U, 0x0FU, 2, 4
+	};
+	config_I2C(I2C1_SCL_B6, I2C1_SDA_B7, I2C_setting, 0x50);
 
 	// USB config
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB

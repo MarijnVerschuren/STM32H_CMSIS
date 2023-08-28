@@ -77,11 +77,10 @@ void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t o
 /*!<
  * master io
  * */
-uint8_t I2C_master_address(I2C_TypeDef* i2c, uint8_t i2c_address, uint32_t timeout);																// -> 0 = OK
-uint32_t I2C_master_write(I2C_TypeDef* i2c, uint8_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);							// -> n processed
-uint32_t I2C_master_read(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout);									// -> n processed
-uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);	// -> n processed
-uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout);			// -> n processed
+uint32_t I2C_master_write(I2C_TypeDef* i2c, uint16_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);							// -> n unprocessed
+uint32_t I2C_master_read(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout);									// -> n unprocessed
+uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);	// -> n unprocessed
+uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout);		// -> n unprocessed
 
 /*!<
  * slave io

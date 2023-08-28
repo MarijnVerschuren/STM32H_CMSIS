@@ -6,17 +6,43 @@
 
 
 /*!<
+ * hidden definitions
+ * */
+typedef enum {
+	I2C_WRITE = 0,
+	I2C_READ =  1
+} I2C_direction_t;
+
+uint8_t I2C_num(I2C_TypeDef* i2c) { dev_id_t id = dev_to_id(i2c); return id.clk ? id.num - 4 : id.num - 21; }
+uint8_t set_I2C_transmission_config(I2C_TypeDef* i2c, uint16_t i2c_address, uint32_t* size, I2C_direction_t dir) {
+	uint8_t reload = (*size) > 255;     uint8_t n_bytes = (*size);
+	if (reload) { n_bytes = 255; }      (*size) -= n_bytes;
+	i2c->CR2 &= ~(
+			I2C_CR2_SADD        |
+			I2C_CR2_RD_WRN      |
+			I2C_CR2_START       |
+			I2C_CR2_STOP        |
+			I2C_CR2_NBYTES      |
+			I2C_CR2_RELOAD
+	);
+	i2c->CR2 |= (
+			I2C_CR2_AUTOEND                 |
+			(reload << I2C_CR2_RELOAD_Pos)  |
+			(n_bytes << I2C_CR2_NBYTES_Pos) |
+			(dir << I2C_CR2_RD_WRN_Pos)     |
+			(i2c_address & I2C_CR2_SADD)
+	);
+	return n_bytes;
+}
+
+
+/*!<
  * variables
  * */
 uint32_t I2C123_kernel_frequency =			0;
 uint32_t I2C4_kernel_frequency =			0;
 uint32_t I2C_peripheral_frequencies[4] = 	{0, 0, 0, 0};
 
-
-/*!<
- * misc
- */
-uint8_t I2C_num(I2C_TypeDef* i2c) { dev_id_t id = dev_to_id(i2c); return id.clk ? id.num - 4 : id.num - 21; }
 
 /*!<
  * init
@@ -40,7 +66,7 @@ void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src) 
 }
 void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address, uint8_t dual_mask) {
 	if (scl == I2C_PIN_DISABLE || sda == I2C_PIN_DISABLE) { return; }
-	dev_pin_t		scl_dev = *((dev_pin_t*)&scl),				sda_dev = *((dev_pin_t*)&sda);
+	dev_pin_t		scl_dev = *((dev_pin_t*)&scl),				    sda_dev = *((dev_pin_t*)&sda);
 	I2C_TypeDef		*scl_i2c = id_to_dev(scl_dev.dev_id),		*sda_i2c = id_to_dev(sda_dev.dev_id),		*i2c = NULL;
 	GPIO_TypeDef	*scl_port = int_to_GPIO(scl_dev.port_num),	*sda_port = int_to_GPIO(sda_dev.port_num);
 	if (scl_i2c != sda_i2c) { return; } i2c = scl_i2c;
@@ -56,29 +82,29 @@ void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint16_t
 
 	i2c->CR1 = 0;  // make sure I2C is off
 	i2c->TIMINGR = (
-			(setting.prescaler << I2C_TIMINGR_PRESC_Pos)	|
-			(setting.scl_delay << I2C_TIMINGR_SCLDEL_Pos)	|
-			(setting.sda_delay << I2C_TIMINGR_SDADEL_Pos)	|
-			(setting.scl_h_pre << I2C_TIMINGR_SCLH_Pos)		|
-			(setting.scl_l_pre << I2C_TIMINGR_SCLL_Pos)
+		(setting.prescaler << I2C_TIMINGR_PRESC_Pos)	|
+		(setting.scl_delay << I2C_TIMINGR_SCLDEL_Pos)	|
+		(setting.sda_delay << I2C_TIMINGR_SDADEL_Pos)	|
+		(setting.scl_h_pre << I2C_TIMINGR_SCLH_Pos)		|
+		(setting.scl_l_pre << I2C_TIMINGR_SCLL_Pos)
 	);
 	i2c->CR2 = (
-			I2C_CR2_AUTOEND	|  // TODO: setting?
-			(address_type << I2C_CR2_ADD10_Pos)
+		I2C_CR2_AUTOEND |
+		I2C_CR2_NACK    |  // should only be disabled in slave mode
+		(address_type << I2C_CR2_ADD10_Pos)
 	);
 	i2c->OAR1 = (
-			((own_address != 0) << I2C_OAR1_OA1EN_Pos)	|
-			(address_type << I2C_OAR1_OA1MODE_Pos)		|
-			((own_address << (I2C_OAR1_OA1_Pos + (!address_type))) & I2C_OAR1_OA1)
+		((own_address != 0) << I2C_OAR1_OA1EN_Pos)	|
+		(address_type << I2C_OAR1_OA1MODE_Pos)		|
+		((own_address << (I2C_OAR1_OA1_Pos + (!address_type))) & I2C_OAR1_OA1)
 	);
 	i2c->OAR2 = (
-			((dual_address != 0) << I2C_OAR2_OA2EN_Pos)			|
-			((dual_mask & 0b111UL) << I2C_OAR2_OA2MASK01_Pos)	|
-			((dual_address << I2C_OAR2_OA2_Pos) & I2C_OAR2_OA2)
+		((dual_address != 0) << I2C_OAR2_OA2EN_Pos)			|
+		((dual_mask & 0b111UL) << I2C_OAR2_OA2MASK01_Pos)	|
+		((dual_address << I2C_OAR2_OA2_Pos) & I2C_OAR2_OA2)
 	);
 	i2c->CR1 |= I2C_CR1_PE;  // turn I2C on
 }
-
 void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t own_address) {
 	fconfig_I2C(scl, sda, setting, own_address, I2C_ADDR_7BIT, 0, 0);
 }
@@ -87,22 +113,30 @@ void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t o
 /*!<
  * master io
  * */
-uint8_t I2C_master_address(I2C_TypeDef* i2c, uint8_t i2c_address, uint32_t timeout) {  // -> 0 = OK
-	return 0;  // p.g. 2006
-}
-
-uint32_t I2C_master_write(I2C_TypeDef* i2c, uint8_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n processed
+uint32_t I2C_master_write(I2C_TypeDef* i2c, uint16_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
+	uint64_t start = tick;
+	uint8_t n_bytes = set_I2C_transmission_config(i2c, i2c_address, &size, I2C_WRITE);
+	while (n_bytes--) {
+		while (!(i2c->ISR & I2C_ISR_TXIS)) { if ( tick - start > timeout) { return size + n_bytes; } }
+		i2c->TXDR = *buffer++;
+		if (!n_bytes && size) {
+			while (!(i2c->ISR & I2C_ISR_TCR)) { if ( tick - start > timeout) { return size + n_bytes; } }
+			n_bytes = set_I2C_transmission_config(i2c, i2c_address, &size, I2C_WRITE);
+		}
+	}
+	while (!(i2c->ISR & I2C_ISR_STOPF)) { if ( tick - start > timeout) { return 0; } }
+	i2c->ICR |= I2C_ICR_STOPCF;  // clear stop flag
 	return 0;
 }
 
-uint32_t I2C_master_read(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n processed
+uint32_t I2C_master_read(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
 	return 0;
 }
 
-uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n processed
+uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
 	return 0;
 }
 
-uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint8_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n processed
+uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
 	return 0;
 }

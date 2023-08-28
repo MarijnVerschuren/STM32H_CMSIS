@@ -145,14 +145,11 @@ void stop_UART_read_irq(USART_TypeDef* usart);
 void start_UART_transmit_irq(USART_TypeDef* usart, uint8_t* buffer, uint32_t size, uint8_t fifo, uint32_t hold_off);
 void disable_UART_irq(USART_TypeDef* usart);
 /*!<
- * input
+ * io
  * */
-uint32_t UART_read(USART_TypeDef* usart, uint8_t* buffer, uint32_t size, uint32_t timeout);
-/*!<
- * output
- * */
-uint32_t UART_write(USART_TypeDef* usart, const void* buffer, uint32_t size, uint32_t timeout);
-uint8_t UART_print(USART_TypeDef* usart, const char* str, uint32_t timeout);
+uint32_t UART_read(USART_TypeDef* usart, uint8_t* buffer, uint32_t size, uint32_t timeout);         // -> n unprocessed
+uint32_t UART_write(USART_TypeDef* usart, const uint8_t* buffer, uint32_t size, uint32_t timeout);  // -> n unprocessed
+uint8_t UART_print(USART_TypeDef* usart, const char* str, uint32_t timeout);                        // -> 0 = OK
 
 
 #endif //STM32H_CMSIS_USART_H

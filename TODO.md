@@ -2,8 +2,7 @@
 >### Very High Priority
 
 >### High Priority
->* move functionality that sets peripheral kernel clock to their respective peripheral files
->* make variables keeping track of each peripheral kernel clock speed (UART, I2C code has to be changed)
+>* I2C slave mode
 >* UART idle, addressing, timeouts, MSB-first, stop-bit-config
 >* Clean up code (make 0xA0UL and 0b10UL consistent!!)
 >* clock security on HSE and LSE (+interrupt!!)

@@ -15,23 +15,6 @@
 #if defined(STM32H7xx)
 SYS_CLK_Config_t* sys_config;
 
-/*
-(void)HSI_clock_frequency;
-(void)HSE_clock_frequency;
-(void)PLL1_P_clock_frequency;
-(void)PLL1_Q_clock_frequency;
-(void)PLL1_R_clock_frequency;
-(void)PLL2_P_clock_frequency;
-(void)PLL2_Q_clock_frequency;
-(void)PLL2_R_clock_frequency;
-(void)AHB_clock_frequency;
-(void)APB1_clock_frequency;
-(void)APB2_clock_frequency;
-(void)APB3_clock_frequency;
-(void)APB4_clock_frequency;
-(void)SYS_clock_frequency;
-*/
-
 
 extern void TIM8_UP_TIM13_IRQHandler(void) {
 	TIM8->SR &= ~TIM_SR_UIF;  // clear interrupt flag
@@ -128,7 +111,6 @@ int main(void) {
 			0x13U, 0x0FU, 2, 4
 	};
 	config_I2C(I2C1_SCL_B6, I2C1_SDA_B7, I2C_setting, 0x50);
-	// TODO: preform I2C write test on ROM chip in keyboard project
 
 	// USB config
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
@@ -140,17 +122,18 @@ int main(void) {
 
 
 	// main loop
-	uint8_t tx_data[5] = {0x50, 0x21, 0x85, 0xA3, 0x1C};
-	uint8_t rx_data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
 	for(;;) {
 		//TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
 		//UART_print(USART1, "Hello World!\n", 100);
-		//I2C_master_write(I2C1, 0x50, tx_data, 5, 100);
-		//I2C_master_read(I2C1, 0x2C, rx_data, 5, 100);
-		//I2C_master_write_reg(I2C1, 0x50, 0x1234, I2C_REG_16, tx_data, 5, 100);
-		//I2C_master_read_reg(I2C1, 0x50, 0x1234, I2C_REG_16, rx_data, 5, 100);
 		//reset_watchdog();
 		delay_ms(10);
 	}
+
+
+	/*!< ROM code */
+	//uint8_t tx_data[5] = {0x50, 0x21, 0x85, 0xA3, 0x1C};
+	//uint8_t rx_data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
+	//I2C_master_write_reg(I2C1, 0x50, 0x1234, I2C_REG_16, tx_data, 5, 100);
+	//I2C_master_read_reg(I2C1, 0x50, 0x1234, I2C_REG_16, rx_data, 5, 100);
 }
 #endif

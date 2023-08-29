@@ -46,11 +46,11 @@ static inline void UART_irq_handler(USART_TypeDef* usart, USART_IRQ_IO_t* io) {
 USART_IRQ_IO_t uart_buf_1;		extern void USART1_IRQHandler(void)		{ UART_irq_handler(USART1,	&uart_buf_1); }
 USART_IRQ_IO_t uart_buf_2;		extern void USART2_IRQHandler(void)		{ UART_irq_handler(USART2,	&uart_buf_2); }
 USART_IRQ_IO_t uart_buf_3;		extern void USART3_IRQHandler(void)		{ UART_irq_handler(USART3,	&uart_buf_3); }
-USART_IRQ_IO_t uart_buf_4;		extern void UART4_IRQHandler(void)		{ UART_irq_handler(UART4,	    &uart_buf_4); }
-USART_IRQ_IO_t uart_buf_5;		extern void UART5_IRQHandler(void)		{ UART_irq_handler(UART5,	    &uart_buf_5); }
+USART_IRQ_IO_t uart_buf_4;		extern void UART4_IRQHandler(void)		{ UART_irq_handler(UART4,	&uart_buf_4); }
+USART_IRQ_IO_t uart_buf_5;		extern void UART5_IRQHandler(void)		{ UART_irq_handler(UART5,	&uart_buf_5); }
 USART_IRQ_IO_t uart_buf_6;		extern void USART6_IRQHandler(void)		{ UART_irq_handler(USART6,	&uart_buf_6); }
-USART_IRQ_IO_t uart_buf_7;		extern void UART7_IRQHandler(void)		{ UART_irq_handler(UART7,	    &uart_buf_7); }
-USART_IRQ_IO_t uart_buf_8;		extern void UART8_IRQHandler(void)		{ UART_irq_handler(UART8,	    &uart_buf_8); }
+USART_IRQ_IO_t uart_buf_7;		extern void UART7_IRQHandler(void)		{ UART_irq_handler(UART7,	&uart_buf_7); }
+USART_IRQ_IO_t uart_buf_8;		extern void UART8_IRQHandler(void)		{ UART_irq_handler(UART8,	&uart_buf_8); }
 USART_IRQ_IO_t uart_buf_lp1;	extern void LPUART1_IRQHandler(void)	{ UART_irq_handler(LPUART1,	&uart_buf_lp1); }
 
 

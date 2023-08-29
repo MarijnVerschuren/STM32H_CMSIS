@@ -59,6 +59,13 @@ typedef struct {
 	uint8_t scl_delay;
 } I2C_setting_t;
 
+typedef enum {
+	I2C_REG_8 =		0,
+	I2C_REG_16 =	1,
+	I2C_REG_32 =	2,
+	I2C_REG_64 =	3
+} I2C_register_address_t;
+
 
 /*!<
  * variables
@@ -77,10 +84,18 @@ void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t o
 /*!<
  * master io
  * */
-uint32_t I2C_master_write(I2C_TypeDef* i2c, uint16_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);							// -> n unprocessed
-uint32_t I2C_master_read(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout);									// -> n unprocessed
-uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);	// -> n unprocessed
-uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout);		// -> n unprocessed
+uint32_t I2C_master_write(I2C_TypeDef* i2c, uint16_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout);								// -> n unprocessed
+uint32_t I2C_master_read(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout);										// -> n unprocessed
+uint32_t I2C_master_write_reg(
+		I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
+		I2C_register_address_t reg_address_type, const uint8_t* buffer,
+		uint32_t size, uint32_t timeout
+);		// -> n unprocessed
+uint32_t I2C_master_read_reg(
+		I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
+		I2C_register_address_t reg_address_type, uint8_t* buffer,
+		uint32_t size, uint32_t timeout
+);		// -> n unprocessed
 
 /*!<
  * slave io

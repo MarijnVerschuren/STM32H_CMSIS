@@ -6,33 +6,50 @@
 
 
 /*!<
- * hidden definitions
+ * hidden enums
  * */
 typedef enum {
 	I2C_WRITE = 0,
 	I2C_READ =  1
 } I2C_direction_t;
 
+
+/*!<
+ * helpers
+ * */
 uint8_t I2C_num(I2C_TypeDef* i2c) { dev_id_t id = dev_to_id(i2c); return id.clk ? id.num - 4 : id.num - 21; }
-uint8_t set_I2C_transmission_config(I2C_TypeDef* i2c, uint16_t i2c_address, uint32_t* size, I2C_direction_t dir) {
-	uint8_t reload = (*size) > 255;     uint8_t n_bytes = (*size);
-	if (reload) { n_bytes = 255; }      (*size) -= n_bytes;
+
+void reset_tx(I2C_TypeDef* i2c) {
 	i2c->CR2 &= ~(
 			I2C_CR2_SADD        |
 			I2C_CR2_RD_WRN      |
 			I2C_CR2_START       |
 			I2C_CR2_STOP        |
 			I2C_CR2_NBYTES      |
-			I2C_CR2_RELOAD
+			I2C_CR2_RELOAD		|
+			I2C_CR2_AUTOEND
 	);
+	i2c->ICR |= (
+			I2C_ICR_STOPCF		|
+			I2C_ICR_NACKCF
+	);
+}
+
+void config_tx(I2C_TypeDef* i2c, uint16_t i2c_address, I2C_direction_t dir, uint8_t auto_end) {
 	i2c->CR2 |= (
-			I2C_CR2_AUTOEND                 |
-			(reload << I2C_CR2_RELOAD_Pos)  |
-			(n_bytes << I2C_CR2_NBYTES_Pos) |
-			(dir << I2C_CR2_RD_WRN_Pos)     |
-			(i2c_address & I2C_CR2_SADD)
+			(auto_end != 0) * I2C_CR2_AUTOEND	|
+			(dir << I2C_CR2_RD_WRN_Pos)     	|
+			((i2c_address << ((i2c->CR2 & I2C_CR2_ADD10) == 0)) & I2C_CR2_SADD)
 	);
-	return n_bytes;
+}
+
+uint8_t config_tx_size(I2C_TypeDef* i2c, uint32_t* size) {
+	uint8_t reload = (*size) > 255;     uint8_t n_bytes = (*size);
+	if (reload) { n_bytes = 255; }      (*size) -= n_bytes;
+	i2c->CR2 |= (
+			(reload << I2C_CR2_RELOAD_Pos)  |
+			(n_bytes << I2C_CR2_NBYTES_Pos)
+	); return n_bytes;
 }
 
 
@@ -64,14 +81,15 @@ void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src) 
 		case I2C_CLK_SRC_CSI:		I2C4_kernel_frequency = CSI_clock_frequency; return;
 	}
 }
+
 void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address, uint8_t dual_mask) {
 	if (scl == I2C_PIN_DISABLE || sda == I2C_PIN_DISABLE) { return; }
-	dev_pin_t		scl_dev = *((dev_pin_t*)&scl),				    sda_dev = *((dev_pin_t*)&sda);
+	dev_pin_t		scl_dev = *((dev_pin_t*)&scl),				sda_dev = *((dev_pin_t*)&sda);
 	I2C_TypeDef		*scl_i2c = id_to_dev(scl_dev.dev_id),		*sda_i2c = id_to_dev(sda_dev.dev_id),		*i2c = NULL;
 	GPIO_TypeDef	*scl_port = int_to_GPIO(scl_dev.port_num),	*sda_port = int_to_GPIO(sda_dev.port_num);
-	if (scl_i2c != sda_i2c) { return; } i2c = scl_i2c;
-	fconfig_GPIO(scl_port, scl_dev.pin_num, GPIO_alt_func, GPIO_no_pull, GPIO_open_drain, GPIO_high_speed, scl_dev.alt_func);
-	fconfig_GPIO(sda_port, sda_dev.pin_num, GPIO_alt_func, GPIO_no_pull, GPIO_open_drain, GPIO_high_speed, sda_dev.alt_func);
+	if (scl_i2c != sda_i2c) { return; } i2c = scl_i2c; enable_dev(i2c);
+	fconfig_GPIO(scl_port, scl_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, scl_dev.alt_func);
+	fconfig_GPIO(sda_port, sda_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, sda_dev.alt_func);
 	uint8_t i2c_num = I2C_num(i2c);
 
 	uint32_t ker_clk_freq = 0;
@@ -105,6 +123,7 @@ void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint16_t
 	);
 	i2c->CR1 |= I2C_CR1_PE;  // turn I2C on
 }
+
 void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t own_address) {
 	fconfig_I2C(scl, sda, setting, own_address, I2C_ADDR_7BIT, 0, 0);
 }
@@ -115,28 +134,104 @@ void config_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint8_t o
  * */
 uint32_t I2C_master_write(I2C_TypeDef* i2c, uint16_t i2c_address, const uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
 	uint64_t start = tick;
-	uint8_t n_bytes = set_I2C_transmission_config(i2c, i2c_address, &size, I2C_WRITE);
+	reset_tx(i2c);
+
+	config_tx(i2c, i2c_address, I2C_WRITE, 1);
+	uint8_t n_bytes = config_tx_size(i2c, &size);
+	while (i2c->ISR & I2C_ISR_BUSY) { if (tick - start > timeout) { return size + n_bytes; } }
+	i2c->CR2 |= I2C_CR2_START;
+
 	while (n_bytes--) {
-		while (!(i2c->ISR & I2C_ISR_TXIS)) { if ( tick - start > timeout) { return size + n_bytes; } }
+	 	while (!(i2c->ISR & I2C_ISR_TXIS)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
 		i2c->TXDR = *buffer++;
 		if (!n_bytes && size) {
-			while (!(i2c->ISR & I2C_ISR_TCR)) { if ( tick - start > timeout) { return size + n_bytes; } }
-			n_bytes = set_I2C_transmission_config(i2c, i2c_address, &size, I2C_WRITE);
+			while (!(i2c->ISR & I2C_ISR_TCR)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
+			n_bytes = config_tx_size(i2c, &size);
 		}
 	}
-	while (!(i2c->ISR & I2C_ISR_STOPF)) { if ( tick - start > timeout) { return 0; } }
+
+	while (!(i2c->ISR & I2C_ISR_STOPF)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return 0; } }
 	i2c->ICR |= I2C_ICR_STOPCF;  // clear stop flag
 	return 0;
 }
 
 uint32_t I2C_master_read(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
+	uint64_t start = tick;
+	reset_tx(i2c);
+
+	config_tx(i2c, i2c_address, I2C_READ, 1);
+	uint8_t n_bytes = config_tx_size(i2c, &size);
+	while (i2c->ISR & I2C_ISR_BUSY) { if (tick - start > timeout) { return size + n_bytes; } }
+	i2c->CR2 |= I2C_CR2_START;
+
+	while (n_bytes--) {
+		while (!(i2c->ISR & I2C_ISR_RXNE)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
+		*buffer++ = i2c->RXDR;
+		if (!n_bytes && size) {
+			while (!(i2c->ISR & I2C_ISR_TCR)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
+			n_bytes = config_tx_size(i2c, &size);
+		}
+	}
+
+	while (!(i2c->ISR & I2C_ISR_STOPF)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return 0; } }
+	i2c->ICR |= I2C_ICR_STOPCF;  // clear stop flag
 	return 0;
 }
 
-uint32_t I2C_master_write_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, const uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
+uint32_t I2C_master_write_reg(
+		I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
+		I2C_register_address_t reg_address_type, const uint8_t* buffer,
+		uint32_t size, uint32_t timeout
+) {  // -> n unprocessed
+	uint64_t start = tick;
+	reset_tx(i2c);
+
+	config_tx(i2c, i2c_address, I2C_WRITE, 1);
+	uint8_t reg_address_size = (0b1U << reg_address_type);	size += reg_address_size;
+	uint8_t n_bytes = config_tx_size(i2c, &size);			n_bytes -= reg_address_size;
+	while (i2c->ISR & I2C_ISR_BUSY) { if (tick - start > timeout) { return size + n_bytes; } }
+	i2c->CR2 |= I2C_CR2_START;
+
+	while (reg_address_size--) {
+		while (!(i2c->ISR & I2C_ISR_TXIS)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
+		i2c->TXDR = (reg_address >> (8 * reg_address_size)) & 0xFFU;
+	}
+
+	while (n_bytes--) {
+		while (!(i2c->ISR & I2C_ISR_TXIS)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
+		i2c->TXDR = *buffer++;
+		if (!n_bytes && size) {
+			while (!(i2c->ISR & I2C_ISR_TCR)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size + n_bytes; } }
+			n_bytes = config_tx_size(i2c, &size);
+		}
+	}
+
+	while (!(i2c->ISR & I2C_ISR_STOPF)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return 0; } }
+	i2c->ICR |= I2C_ICR_STOPCF;  // clear stop flag
 	return 0;
 }
 
-uint32_t I2C_master_read_reg(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t reg_address, uint8_t* buffer, uint32_t size, uint32_t timeout) {  // -> n unprocessed
-	return 0;
+uint32_t I2C_master_read_reg(
+		I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
+		I2C_register_address_t reg_address_type, uint8_t* buffer,
+		uint32_t size, uint32_t timeout
+) {  // -> n unprocessed
+	uint64_t start = tick;
+	reset_tx(i2c);
+
+	config_tx(i2c, i2c_address, I2C_WRITE, 1);
+	uint8_t reg_address_size = (0b1U << reg_address_type);
+	i2c->CR2 |= (reg_address_size << I2C_CR2_NBYTES_Pos);
+	while (i2c->ISR & I2C_ISR_BUSY) { if (tick - start > timeout) { return size; } }
+	i2c->CR2 |= I2C_CR2_START;
+
+	while (reg_address_size--) {
+		while (!(i2c->ISR & I2C_ISR_TXIS)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return size; } }
+		i2c->TXDR = (reg_address >> (8 * reg_address_size)) & 0xFFU;
+	}
+
+	while (!(i2c->ISR & I2C_ISR_STOPF)) { if (tick - start > timeout) { i2c->CR2 |= I2C_CR2_STOP; return 0; } }
+	i2c->ICR |= I2C_ICR_STOPCF;  // clear stop flag
+
+	return I2C_master_read(i2c, i2c_address, buffer, size, timeout - (tick - start));
 }

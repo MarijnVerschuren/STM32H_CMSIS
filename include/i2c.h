@@ -51,6 +51,13 @@ typedef enum {
 	I2C_ADDR_10BIT =	0b1u,
 } I2C_address_t;
 
+typedef enum {
+	I2C_REG_8 =		0,
+	I2C_REG_16 =	1,
+	I2C_REG_32 =	2,
+	I2C_REG_64 =	3
+} I2C_register_address_t;
+
 typedef struct {
 	uint8_t prescaler;
 	uint8_t scl_l_pre;
@@ -58,13 +65,6 @@ typedef struct {
 	uint8_t sda_delay;
 	uint8_t scl_delay;
 } I2C_setting_t;
-
-typedef enum {
-	I2C_REG_8 =		0,
-	I2C_REG_16 =	1,
-	I2C_REG_32 =	2,
-	I2C_REG_64 =	3
-} I2C_register_address_t;
 
 
 /*!<

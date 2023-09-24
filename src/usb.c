@@ -24,3 +24,14 @@ void config_USB_kernel_clock(USB_CLK_SRC_t src) {
 		case USB_CLK_SRC_HSI48:		USB_kernel_frequency = HSI48_clock_frequency; return;
 	}
 }
+
+void fconfig_USB(USB_GPIO_t dp, USB_GPIO_t dn) {
+	//#define USB1_OTG_HS_PERIPH_BASE  -->  (dev_id){25, DEV_CLOCK_ID_AHB1}  --[((num - 23) << 16) + AHB1_BASE]-->  (0x40040000UL)
+	//#define USB2_OTG_FS_PERIPH_BASE  -->  (dev_id){27, DEV_CLOCK_ID_AHB1}  --[((num - 23) << 16) + AHB1_BASE]-->  (0x40080000UL)
+
+	return;
+}
+
+void config_USB(USB_GPIO_t dp, USB_GPIO_t dn) {
+	fconfig_USB(dp, dn);
+}

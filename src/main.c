@@ -115,6 +115,9 @@ int main(void) {
 	// USB config
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	// TODO: [2]
+	volatile dev_id_t id1 = dev_to_id(USB1_OTG_HS);
+	volatile dev_id_t id2 = dev_to_id(USB2_OTG_FS);
+	(void)id1; (void)id2;
 
 	// Watchdog config (32kHz / (4 << prescaler))
 	config_watchdog(0, 0xFFFUL);	// 1s

@@ -25,9 +25,19 @@ void config_USB_kernel_clock(USB_CLK_SRC_t src) {
 	}
 }
 
+// TODO: ULPI?
+/* uint16_t				dp_ulpi = dp_dev.dev_id.sub,				dn_ulpi = dn_dev.dev_id.sub;
+dev_id_t				ulpi = {0, 0, 0}; if (dp_ulpi == dn_ulpi) { ulpi = *((dev_id_t*)&dp_ulpi); }
+if (ulpi.clk)			{ enable_id(ulpi); } */
 void fconfig_USB(USB_GPIO_t dp, USB_GPIO_t dn) {
-	//#define USB1_OTG_HS_PERIPH_BASE  -->  (dev_id){25, DEV_CLOCK_ID_AHB1}  --[((num - 23) << 16) + AHB1_BASE]-->  (0x40040000UL)
-	//#define USB2_OTG_FS_PERIPH_BASE  -->  (dev_id){27, DEV_CLOCK_ID_AHB1}  --[((num - 23) << 16) + AHB1_BASE]-->  (0x40080000UL)
+	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }
+	dev_pin_t				dp_dev = *((dev_pin_t*)&dp),				dn_dev = *((dev_pin_t*)&dn);
+	USB_OTG_GlobalTypeDef	*dp_usb = (void*)(((dp_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
+							*dn_usb = (void*)(((dn_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
+							*usb = NULL;
+	GPIO_TypeDef			*dp_port = int_to_GPIO(dp_dev.port_num),	*dn_port = int_to_GPIO(dn_dev.port_num);
+	if (dp_usb != dn_usb) { return; } usb = dp_usb; enable_id(dp_dev.dev_id);
+	__NOP();
 
 	return;
 }

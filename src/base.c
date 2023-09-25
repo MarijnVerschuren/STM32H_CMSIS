@@ -8,8 +8,7 @@
 /*!<
  * device
  * */
-void enable_dev(void* dev) {
-	dev_id_t id = dev_to_id(dev);
+void enable_id(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_NONE) { return; }
 	uint32_t mask = (0b1UL << (id.num & 0b11111UL));
 	volatile uint32_t* reg; switch (id.clk) {
@@ -23,8 +22,11 @@ void enable_dev(void* dev) {
 		case DEV_CLOCK_ID_AHB4: reg = &RCC->AHB4ENR; break;
 	} do { (*reg) |= mask; } while (!((*reg) & mask));
 }
-void disable_dev(void* dev) {
+void enable_dev(void* dev) {
 	dev_id_t id = dev_to_id(dev);
+	enable_id(id);
+}
+void disable_id(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_NONE) { return; }
 	uint32_t mask = (0b1UL << (id.num & 0b11111UL));
 	volatile uint32_t* reg; switch (id.clk) {
@@ -37,6 +39,10 @@ void disable_dev(void* dev) {
 		case DEV_CLOCK_ID_APB4: reg = &RCC->APB4RSTR; break;
 		case DEV_CLOCK_ID_AHB4: reg = &RCC->AHB4RSTR; break;
 	} (*reg) |= mask;
+}
+void disable_dev(void* dev) {
+	dev_id_t id = dev_to_id(dev);
+	disable_id(id);
 }
 
 dev_id_t dev_to_id(void* dev) {

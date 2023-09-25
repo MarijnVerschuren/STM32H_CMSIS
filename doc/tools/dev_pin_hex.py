@@ -46,7 +46,7 @@ if __name__ == "__main__":
 		"I2C3": ("APB1", 23),    "I2C4": ("APB4", 7)
 	}
 	usbs = {
-		"USB1": ("AHB1", 25),    "USB2": ("AHB1", 27),
+		"USB1": ("AHB1", 25),    "USB2": ("AHB1", 27)
 	}
 	
 	while True:
@@ -81,9 +81,14 @@ if __name__ == "__main__":
 				clk = clocks[clk]
 			elif usb_dev:
 				usb = input("usb: ")
-				try:    usb = usbs[f"USB{int(usb)}"]
-				except: usb = usbs[usb.upper()]
-				clk, dev = usb
+				ulpi = input("ulpi?") != ""
+				print("ulpi " + ("ON" if ulpi else "OFF"))
+				try:
+					clk, dev = usbs[f"USB{int(usb)}"]
+					if ulpi: sub = (0x1 << 5) | ((dev + 1) & 0x1f)  # clock is always AHB1
+				except:
+					clk, dev = usbs[usb.upper()]
+					if ulpi: sub = (0x1 << 5) | ((dev + 1) & 0x1f)  # clock is always AHB1
 				clk = clocks[clk]
 			else:
 				clk = input("clk: ")
@@ -102,6 +107,7 @@ if __name__ == "__main__":
 				((clk & 0x1f) << 5)     |   # - dev_id
 				(dev & 0x1f)                # |
 			)
+			print(hex(sub))
 			print(f"{res:#0{10}x}".upper().replace("X", "x"))
 		except KeyboardInterrupt:   exit(0)
 		except Exception as e:      print(e); pass

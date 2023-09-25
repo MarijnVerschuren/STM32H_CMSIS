@@ -51,7 +51,9 @@ typedef struct {
 /*!<
  * device
  * */
+void enable_id(dev_id_t id);
 void enable_dev(void* dev);
+void disable_id(dev_id_t id);
 void disable_dev(void* dev);
 
 dev_id_t dev_to_id(void* dev);

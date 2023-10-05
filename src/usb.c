@@ -29,7 +29,7 @@ void config_USB_kernel_clock(USB_CLK_SRC_t src) {
 /* uint16_t				dp_ulpi = dp_dev.dev_id.sub,				dn_ulpi = dn_dev.dev_id.sub;
 dev_id_t				ulpi = {0, 0, 0}; if (dp_ulpi == dn_ulpi) { ulpi = *((dev_id_t*)&dp_ulpi); }
 if (ulpi.clk)			{ enable_id(ulpi); } */
-void fconfig_USB(USB_GPIO_t dp, USB_GPIO_t dn) {
+void fconfig_USB_FS(USB_GPIO_t dp, USB_GPIO_t dn) {
 	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }
 	dev_pin_t				dp_dev = *((dev_pin_t*)&dp),				dn_dev = *((dev_pin_t*)&dn);
 	USB_OTG_GlobalTypeDef	*dp_usb = (void*)(((dp_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
@@ -42,6 +42,6 @@ void fconfig_USB(USB_GPIO_t dp, USB_GPIO_t dn) {
 	return;
 }
 
-void config_USB(USB_GPIO_t dp, USB_GPIO_t dn) {
-	fconfig_USB(dp, dn);
+void config_USB_FS(USB_GPIO_t dp, USB_GPIO_t dn) {
+	fconfig_USB_FS(dp, dn);
 }

@@ -37,7 +37,30 @@ void fconfig_USB_FS(USB_GPIO_t dp, USB_GPIO_t dn) {
 							*usb = NULL;
 	GPIO_TypeDef			*dp_port = int_to_GPIO(dp_dev.port_num),	*dn_port = int_to_GPIO(dn_dev.port_num);
 	if (dp_usb != dn_usb) { return; } usb = dp_usb; enable_id(dp_dev.dev_id);
-	__NOP();
+
+	usb->GOTGCTL = (
+		0b1 << USB_OTG_GOTGCTL_OTGVER_Pos	|	// OTG Version 2.0
+		0
+	);
+	// EHEN			->	embedded host enable		-> ???
+	// DHNPEN		->	device HNP enable			|
+	// HSHNPEN		->	host HNP enable				| Host negotiation
+	// HNPRQ		->	HNP request					| ????
+	// HNGSCS (r)	->	Host negotiation success	|
+	// BVALOVAL		->	B-peripheral session valid override value	|
+	// BVALOEN		->	B-peripheral session valid override enable	| A/B - peripheral session
+	// AVALOVAL		->	A-peripheral session valid override value	| ????
+	// AVALOEN		->	A-peripheral session valid override enable	|
+	// VBVALOVAL	->	VBUS valid override value	| VBUS valid signal
+	// VBVALOEN		->	VBUS valid override enable	| ????
+
+	// SRQ			->	Session request				| IMPORTANT??
+	// SRQSCS (r)	->	Session request success		| !!!!
+	
+
+	usb->GAHBCFG = (
+		0
+	);
 
 	return;
 }

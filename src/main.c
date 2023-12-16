@@ -114,20 +114,20 @@ int main(void) {
 
 	// USB config
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
-	config_USB_FS(USB2_FS_DP_A12, USB2_FS_DN_A11);
+	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
 
 
 	// Watchdog config (32kHz / (4 << prescaler))
-	config_watchdog(0, 0xFFFUL);	// 1s
+	//config_watchdog(0, 0xFFFUL);	// 1s
 	//start_watchdog();
 
 
 	// main loop
 	for(;;) {
-		//TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
-		//UART_print(USART1, "Hello World!\n", 100);
+		TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
+		UART_print(USART1, "Hello World!\n", 100);
 		//reset_watchdog();
-		delay_ms(10);
+		delay_ms(100);
 	}
 
 

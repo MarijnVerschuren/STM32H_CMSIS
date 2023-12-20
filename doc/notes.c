@@ -188,23 +188,25 @@
 /// device->DAINT					TODO: [57.14.44		OTG device all endpoints interrupt register]				@2679
 /// device->DAINTMSK				TODO: [57.14.45		OTG all endpoints interrupt mask register]					@2680
 /// device->DVBUSDIS				TODO: [57.14.46		OTG device Vbus discharge time register]					@2681
-/// device->DVBUSPULSE				TODO: [57.14.47		OTG device VBUS pulsing time register]						@2681
+/// device->DVBUSPULSE				TODO: [57.14.47		OTG device Vbus pulsing time register]						@2681
 /// device->DTHRCTL					TODO: [57.14.48		OTG device threshold control register]						@2682
 /// device->DIEPEMPMSK				TODO: [57.14.49		OTG device IN endpoint FIFO empty interrupt mask register]	@2683
 /// device->DEACHINT				TODO: [57.14.50		OTG device each endpoint interrupt register]				@2683
 /// device->DEACHINTMSK				TODO: [57.14.51		OTG device each endpoint interrupt mask register]			@2684
 /// device->HS_DIEPEACHMSK1			TODO: [57.14.52		OTG device each IN endpoint-1 interrupt mask register]		@2684
 /// device->HS_DOEPEACHMSK1			TODO: [57.14.53		OTG device each OUT endpoint-1 interrupt mask register]		@2685
-/// device->DIEPCTLx (x: 0 to 8)	TODO: [57.14.54		OTG device IN endpoint x control register]					@2687
-/// device->DIEPINTx (x: 0 to 8)	TODO: [57.14.55		OTG device IN endpoint x interrupt register]				@2689
-/// device->DIEPTSIZ0				TODO: [57.14.56		OTG device IN endpoint 0 transfer size register]			@2691
-/// device->DIEPDMAx (x: 0 to 8)	TODO: [57.14.57		OTG device IN endpoint x DMA address register]				@2691
-/// device->DTXFSTSx (x: 0 to 8)	TODO: [57.14.58		OTG device IN endpoint transmit FIFO status register]		@2692
-/// device->DIEPTSIZx (x: 1 to 8)	TODO: [57.14.59		OTG device IN endpoint x transfer size register]			@2692
-/// device->DOEPCTL0				TODO: [57.14.60		OTG device control OUT endpoint 0 control register]			@2693
-/// device->DOEPINTx (x: 0 to 8)	TODO: [57.14.61		OTG device OUT endpoint x interrupt register]				@2695
-/// device->DOEPTSIZ0				TODO: [57.14.62		OTG device OUT endpoint 0 transfer size register]			@2697
-/// device->DOEPDMAx (x: 0 to 8)	TODO: [57.14.63		OTG device OUT endpoint x DMA address register]				@2698
-/// device->DOEPCTLx (x: 1 to 8)	TODO: [57.14.64		OTG device OUT endpoint x control register]					@2698
-/// device->DOEPTSIZx (x: 1 to 8)	TODO: [57.14.65		OTG device OUT endpoint x transfer size register]			@2701
-/// device->PCGCCTL					TODO: [57.14.66		OTG power and clock gating control register]				@2702
+
+// (x = 0 to 8)
+/// in[x]->DIEPCT					TODO: [57.14.54		OTG device IN endpoint x control register]					@2687
+/// in[x]->DIEPINT					TODO: [57.14.55		OTG device IN endpoint x interrupt register]				@2689
+/// in[0]->DIEPTSIZ					TODO: [57.14.56		OTG device IN endpoint 0 transfer size register]			@2691
+/// in[x]->DIEPDMA					TODO: [57.14.57		OTG device IN endpoint x DMA address register]				@2691
+/// in[x]->DTXFSTS					TODO: [57.14.58		OTG device IN endpoint transmit FIFO status register]		@2692
+/// in[x]->DIEPTSIZ (x > 0)			TODO: [57.14.59		OTG device IN endpoint x transfer size register]			@2692
+/// out[0]->DOEPCTL					TODO: [57.14.60		OTG device control OUT endpoint 0 control register]			@2693
+/// out[x]->DOEPINT					TODO: [57.14.61		OTG device OUT endpoint x interrupt register]				@2695
+/// out[0]->DOEPTSIZ				TODO: [57.14.62		OTG device OUT endpoint 0 transfer size register]			@2697
+/// out[x]->DOEPDMA					TODO: [57.14.63		OTG device OUT endpoint x DMA address register]				@2698
+/// out[x]->DOEPCTL (x > 0)			TODO: [57.14.64		OTG device OUT endpoint x control register]					@2698
+/// out[x]->DOEPTSIZx (x > 0)		TODO: [57.14.65		OTG device OUT endpoint x transfer size register]			@2701
+/// (usb + 0xE00)=>PCGCCTL			TODO: [57.14.66		OTG power and clock gating control register]				@2702

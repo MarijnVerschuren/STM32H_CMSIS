@@ -135,8 +135,19 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		0b1U << (USB_OTG_DAINTMSK_IEPM_Pos + 1)		// endpoint 1 IN
 	);
 
+	// TODO: only config EP0 and let other functions do the rest
 	/* endpoint config */
 	in[0].DIEPCTL = (
+		0  // TODO
+	);
+	in[1].DIEPCTL = (
+		0  // TODO
+	);
+
+	out[0].DOEPCTL = (
+		0  // TODO
+	);
+	out[1].DOEPCTL = (
 		0  // TODO
 	);
 

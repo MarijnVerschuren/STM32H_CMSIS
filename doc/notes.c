@@ -26,18 +26,18 @@
 // ULPIIPD		->	ULPI interface protect disable
 // PTCI			->	disable complement output qualification with internal Vbus
 // PCCI			->	enable external/Vbus indicator signal inversion by PHY
-// TSDPS		->	data line pulsing using (0: utmi_txvalid, 1: utmi_termsel)
+// TSDPS		->	data line pulsing using (0b0: utmi_txvalid, 0b1: utmi_termsel)
 // ULPIEVBUSI	->	PHY uses an exernal Vbus valid comparator
-// ULPIEVBUSD	->	PHY drives Vbus using external supply								| TODO
-// ULPICSM		->	PHY does (1: not) power down internal clock when suspended
-// ULPAIR		->	enable auto resume on PHY											| ??
-// ULPIFSLS		->	ULPI (1: FS/LS serial) interface
-// PHYLPC		->	(0: 480 MHz internal PLL clock, 1: 48 MHz external clock)			| TODO!!!
+// ULPIEVBUSD	->	PHY drives Vbus using external supply									| TODO
+// ULPICSM		->	PHY does (0b1: not) power down internal clock when suspended
+// ULPAIR		->	enable auto resume on PHY												| ??
+// ULPIFSLS		->	ULPI (0b1: FS/LS serial) interface
+// PHYLPC		->	(0b0: 480 MHz internal PLL clock, 0b1: 48 MHz external clock)			| TODO!!!
 // TRDT			->	USB turnaround time TODO: configure according to [Table 519]
 // HNPCAP		->	HNP capability enabled
 // SRPCAP		->	SRP capability enabled
-// PHYSEL		->	(0: USB 2.0 external ULPI high-speed PHY, 1: 1.1 full-speed serial)	|
-// TOCAL		->	FS timeout calibration												| TODO
+// PHYSEL		->	(0b0: USB 2.0 external ULPI high-speed PHY, 0b1: 1.1 full-speed serial)	|
+// TOCAL		->	FS timeout calibration													| TODO
 
 /// usb->GRSTCTL					TODO: [57.14.5		OTG reset register]											@2630
 // AHBIDL	(r)	->	indicates that AHB master state machine is in the idle state
@@ -63,7 +63,7 @@
 //	- 0011:	out transfer completed (interrupt trigger)
 //	- 0100: setup transaction completed (interrupt trigger)
 //	- 0110: setup data packet received
-// DPID		(r)	->	data PID		(00: DATA0, 10: DATA1, 01: DATA2, 11: MDATA)
+// DPID		(r)	->	data PID		(0b00: DATA0, 0b01: DATA2, 0b10: DATA1, 0b11: MDATA)
 // BCNT		(r) ->	transmitted byte count	TODO: transmitted or received?
 // EPNUM	(r)	->	endpoint number
 
@@ -76,7 +76,7 @@
 //	- 0011:	in transfer completed (interrupt trigger)
 //	- 0101: data toggle error (interrupt trigger)
 //	- 0111: channel halted (interrupt trigger)
-// DPID		(r)	->	data PID		(00: DATA0, 10: DATA1, 01: DATA2, 11: MDATA)
+// DPID		(r)	->	data PID		(0b00: DATA0, 0b01: DATA2, 0b10: DATA1, 0b11: MDATA)
 // BCNT		(r) ->	received byte count		TODO: transmitted or received?
 // CHNUM	(r)	->	channel number
 
@@ -197,16 +197,83 @@
 /// device->HS_DOEPEACHMSK1			TODO: [57.14.53		OTG device each OUT endpoint-1 interrupt mask register]		@2685
 
 // (x = 0 to 8)
-/// in[x]->DIEPCT					TODO: [57.14.54		OTG device IN endpoint x control register]					@2687
+/// in[x]->DIEPCTL					TODO: [57.14.54		OTG device IN endpoint x control register]					@2687
+// EPENA			->	endpoint enable
+// EPDIS			->	endpoint disable
+// SODDFRM			->	set odd frame	(isochronous endpoints)
+// SD0PID/SEVNFRM	->	set DATA0 PID / set even frame
+// 	- interrupt/bulk endpoints	->	write DPID to DATA0
+//	- isochronous endpoints		->	set even frame
+// SNAK				->	set NAK
+// CNAK				->	clear NAK
+// TXFNUM (IN)		->	tx FIFO number
+// STALL			->	STALL handshake	(non-controll, non isochronous, IN endpoints)
+// EPTYP			->	endpoint type
+//  - 00: control
+//  - 01: isochronous
+//  - 10: bulk
+//  - 11: interrupt
+// NAKSTS		(r)	->	NAK status
+// EONUM/DPID	(r)	->	even/odd fame / endpoint data PID
+//	- isochronous endpoints		->	EONUM (0b0: even, 0b1: odd)
+//  - interrupt/bulk endpoints	->	DPID (0b0: DATA0, 0b1: DATA1)
+// USBAEP		(r?)->	USB active endpoint TODO!!
+// MPSIZ			->	maximum packet size
 /// in[x]->DIEPINT					TODO: [57.14.55		OTG device IN endpoint x interrupt register]				@2689
 /// in[0]->DIEPTSIZ					TODO: [57.14.56		OTG device IN endpoint 0 transfer size register]			@2691
+// PKTCNT			->	packet count
+// XFRSIZ			->	transfer size
 /// in[x]->DIEPDMA					TODO: [57.14.57		OTG device IN endpoint x DMA address register]				@2691
 /// in[x]->DTXFSTS					TODO: [57.14.58		OTG device IN endpoint transmit FIFO status register]		@2692
 /// in[x]->DIEPTSIZ (x > 0)			TODO: [57.14.59		OTG device IN endpoint x transfer size register]			@2692
+// MCNT				->	multi count
+// PKTCNT			->	packet count
+// XFRSIZ			->	transfer size
 /// out[0]->DOEPCTL					TODO: [57.14.60		OTG device control OUT endpoint 0 control register]			@2693
+// EPENA			->	endpoint enable
+// EPDIS		(r)	->	endpoint disabled
+// SNAK				->	set NAK
+// CNAK				->	clear NAK
+// STALL		(rs)->	STALL handshake
+// SNPM				->	snoop mode TODO
+// EPTYP		(r) ->	endpoint type (for endpoint 0 it is hardcoded to 0b00)
+// NAKSTS		(r)	->	NAK status
+// USBAEP		(r) ->	USB active endpoint
+// MPSIZ			->	maximum packet size
+//  - 0b00: 64 bytes
+//  - 0b01: 32 bytes
+//  - 0b10: 16 bytes
+//  - 0b11: 8 bytes
 /// out[x]->DOEPINT					TODO: [57.14.61		OTG device OUT endpoint x interrupt register]				@2695
 /// out[0]->DOEPTSIZ				TODO: [57.14.62		OTG device OUT endpoint 0 transfer size register]			@2697
 /// out[x]->DOEPDMA					TODO: [57.14.63		OTG device OUT endpoint x DMA address register]				@2698
 /// out[x]->DOEPCTL (x > 0)			TODO: [57.14.64		OTG device OUT endpoint x control register]					@2698
+// EPENA			->	endpoint enable
+// EPDIS			->	endpoint disable
+// SD1PID/SODDFRM	->	set data1 PID / set odd frame
+// 	- interrupt/bulk endpoints	->	write DPID to DATA1
+//	- isochronous endpoints		->	set even frame
+// SD0PID/SEVNFRM	->	set data0 PID / set even frame
+// 	- interrupt/bulk endpoints	->	write DPID to DATA0
+//	- isochronous endpoints		->	set even frame
+// SNAK				->	set NAK
+// CNAK				->	clear NAK
+// STALL			->	STALL handshake
+// SNPM				->	snoop mode
+// EPTYP			->	endpoint type
+//  - 0b00: control
+//  - 0b01: isochronous
+//  - 0b10: bulk
+//  - 0b11: interrupt
+// NAKSTS		(r)	->	NAK status
+// EONUM/DPID	(r)	->	even/odd fame / endpoint data PID
+//	- isochronous endpoints		->	EONUM (0b0: even, 0b1: odd)
+//  - interrupt/bulk endpoints	->	DPID (0b0: DATA0, 0b1: DATA1)
+// USBAEP			->	USB active endpoint
+// MPSIZ			->	maximum packet size
 /// out[x]->DOEPTSIZx (x > 0)		TODO: [57.14.65		OTG device OUT endpoint x transfer size register]			@2701
+// RXDPID/STUPCNT	->	received data PID / setup packet count
+//  - PID: (0b00: DATA0, 0b01: DATA2, 0b10: DATA1, 0b11: MDATA)
+// PKTCNT			->	packet count
+// XFRSIZ			->	transfer size
 /// (usb + 0xE00)=>PCGCCTL			TODO: [57.14.66		OTG power and clock gating control register]				@2702

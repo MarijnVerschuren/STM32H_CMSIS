@@ -262,9 +262,9 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	RCC->PLL3FRACR = (config->PLL3_config.N_fraction << RCC_PLL3FRACR_FRACN3_Pos);
 	//!< update PLL frequency variables
 	switch ((PLL_SRC_t)config->PLL_src) {
-		case PLL_SRC_HSI: PLL_src_freq = HSI_clock_frequency; break;
-		case PLL_SRC_CSI: PLL_src_freq = CSI_clock_frequency; break;
-		case PLL_SRC_HSE: PLL_src_freq = HSE_clock_frequency; break;
+		case PLL_SRC_HSI: PLL_src_freq = HSI_clock_frequency / config->PLL1_config.M_factor; break;
+		case PLL_SRC_CSI: PLL_src_freq = CSI_clock_frequency / config->PLL1_config.M_factor; break;
+		case PLL_SRC_HSE: PLL_src_freq = HSE_clock_frequency / config->PLL1_config.M_factor; break;
 	}
 	PLL1_freq = PLL_src_freq * (config->PLL1_config.N_factor + 1);
 	PLL2_freq = PLL_src_freq * (config->PLL2_config.N_factor + 1);
@@ -330,7 +330,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	);
 	while ((RCC->CFGR & RCC_CFGR_SWS) != (config->SYS_CLK_src << RCC_CFGR_SWS_Pos));	// wait until the sys clock is switched
 	//!< enable/disable HSI
-	tmp_reg = RCC->CR; tmp_reg &= !RCC_CR_HSION;
+	tmp_reg = RCC->CR; tmp_reg &= ~RCC_CR_HSION;
 	tmp_reg |= config->HSI_enable << RCC_CR_HSION_Pos;
 	RCC->CR = tmp_reg;
 	HSI_clock_frequency *= 1 - config->HSI_enable;

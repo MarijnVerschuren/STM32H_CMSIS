@@ -187,7 +187,7 @@ uint32_t I2C_master_write_reg(
 	reset_tx(i2c);
 
 	config_tx(i2c, i2c_address, I2C_WRITE, 1);
-	uint8_t reg_address_size = (0b1U << reg_address_type);	size += reg_address_size;
+	uint8_t reg_address_size = (0b1UL << reg_address_type);	size += reg_address_size;
 	uint8_t n_bytes = config_tx_size(i2c, &size);			n_bytes -= reg_address_size;
 	while (i2c->ISR & I2C_ISR_BUSY) { if (tick - start > timeout) { return size + n_bytes; } }
 	i2c->CR2 |= I2C_CR2_START;
@@ -220,7 +220,7 @@ uint32_t I2C_master_read_reg(
 	reset_tx(i2c);
 
 	config_tx(i2c, i2c_address, I2C_WRITE, 1);
-	uint8_t reg_address_size = (0b1U << reg_address_type);
+	uint8_t reg_address_size = (0b1UL << reg_address_type);
 	i2c->CR2 |= (reg_address_size << I2C_CR2_NBYTES_Pos);
 	while (i2c->ISR & I2C_ISR_BUSY) { if (tick - start > timeout) { return size; } }
 	i2c->CR2 |= I2C_CR2_START;

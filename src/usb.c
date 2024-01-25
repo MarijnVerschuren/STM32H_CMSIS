@@ -61,104 +61,161 @@ dev_id_t				ulpi = {0, 0, 0}; if (dp_ulpi == dn_ulpi) { ulpi = *((dev_id_t*)&dp_
 if (ulpi.clk)			{ enable_id(ulpi); } */
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }
-	dev_pin_t					dp_dev = *((dev_pin_t*)&dp),				dn_dev = *((dev_pin_t*)&dn);
-	USB_OTG_GlobalTypeDef		*dp_usb = (void*)(((dp_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
-								*dn_usb = (void*)(((dn_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
-								*usb = NULL;
+	dev_pin_t					dp_dev =	*((dev_pin_t*)&dp),				dn_dev = *((dev_pin_t*)&dn);
+	USB_OTG_GlobalTypeDef		*dp_usb =	(void*)(((dp_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
+								*dn_usb =	(void*)(((dn_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
+								*usb =		NULL;
 	USB_OTG_DeviceTypeDef		*device =	(void*)((uint32_t)usb + 0x800);
 	USB_OTG_INEndpointTypeDef	*in =		(void*)((uint32_t)usb + 0x900);
 	USB_OTG_OUTEndpointTypeDef	*out =		(void*)((uint32_t)usb + 0xB00);
+	volatile uint32_t			*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
 	GPIO_TypeDef				*dp_port = int_to_GPIO(dp_dev.port_num),	*dn_port = int_to_GPIO(dn_dev.port_num);
-	if (dp_usb != dn_usb) { return; } usb = dp_usb; enable_id(dp_dev.dev_id);
+	if (dp_usb != dn_usb) { return; } usb = dp_usb;
 
 	/* GPIO config */
 	fconfig_GPIO(dp_port, dp_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dp_dev.alt_func);
 	fconfig_GPIO(dn_port, dn_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dn_dev.alt_func);
 
+	/* enable USB device clock and global interrupt */
+	enable_id(dp_dev.dev_id);
+
+	// TODO: clean up!!
+	uint32_t irqn = USB_to_IRQn(usb);
+	NVIC_SetPriority(irqn, 0);
+	NVIC_EnableIRQ(irqn);
+
 	/* power config */
 	PWR->CR3 |= (
-		PWR_CR3_USBREGEN	|					// TODO: needed?
+		PWR_CR3_USBREGEN	|	// TODO: needed?
 		PWR_CR3_USB33DEN	|
 		PWR_CR3_SCUEN		|
 		PWR_CR3_LDOEN
 	);
 
-	/* core config */
-	usb->GOTGCTL = (
-		0b1U << USB_OTG_GOTGCTL_OTGVER_Pos		// OTG Version 2.0
-	);
-	/// usb->GOTGINT TODO: @2624
-	/// usb->GAHBCFG TODO: @2626
-	usb->GUSBCFG = (
-		0b10U << USB_OTG_GUSBCFG_FHMOD_Pos	|	// force device device mode
-		0b1U << USB_OTG_GUSBCFG_PHYSEL_Pos		// set FS mode
-	);
-	usb->GINTMSK = (
-		USB_OTG_GINTMSK_RXFLVLM				|	// enable receive FIFO non-empty interrupt
-		USB_OTG_GINTMSK_USBRST				|	// enable USB reset interrupt
-		USB_OTG_GINTMSK_ENUMDNEM			|	// enable enumeration done interrupt
-		USB_OTG_GINTMSK_IEPINT				|	// enable IN endpoints interrupt
-		USB_OTG_GINTMSK_OEPINT					// enable OUT endpoints interrupt
-	);
-	usb->GINTSTS = 0xFFFCFCFF;					// clear all interrupts
-	usb->GCCFG = (
-		0b1U << USB_OTG_GCCFG_VBDEN_Pos			// enable Vbus detection
-	);
-	// usb->CID	-> 32-bit id TODO !!!!!!
+	// set device info // TODO: remains unchanged??
+	//usb->CID = 0x4D2E562EUL;								// "M.V."
 
-	usb->GRXFSIZ = 0x80;						// rx FIFO size
+	usb->GAHBCFG = 0x00000000UL;							// clear GAHBCFG config to disable interrupts during setup
+
+	// set phy and device mode
+	usb->GUSBCFG = (
+		USB_OTG_GUSBCFG_FDMOD	|							// force device device mode
+		USB_OTG_GUSBCFG_PHYSEL								// select internal PHY
+	);
+	while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
+
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	usb->GRSTCTL |= USB_OTG_GRSTCTL_CSRST;					// reset the core
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_CSRST);			// wait until reset is processed
+
+	usb->GCCFG = (
+		USB_OTG_GCCFG_VBDEN		|							// enable Vbus detection
+		USB_OTG_GCCFG_PWRDWN								// power up internal PHY transceiver
+		// TODO: battery charging detection (PWRDWN should then be off)
+	);
+
+	/* select device mode was placed here TODO check */
+	//usb->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;				// force device device mode
+	//while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
+
+	uint8_t i;
+	for (i = 0UL; i < 0xFU; i++) {
+		usb->DIEPTXF[i] = 0x00000000UL;						// clear IN endpoint FIFO sizes/offsets
+	}
+	// usb->GCCFG |= USB_OTG_GCCFG_VBDEN;  // TODO check (VBDEN enable originally here!)
+	*PCGCCTL = 0x00000000UL;								// restart PHY clock
+
+	device->DCFG = (
+		0b00UL << USB_OTG_DCFG_PFIVL_Pos			|		// 80% (TODO: try 90%)
+		0b11UL << USB_OTG_DCFG_DSPD_Pos						// FS on internal PHY
+	);
+
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	usb->GRSTCTL = (
+		0x10UL << USB_OTG_GRSTCTL_TXFNUM_Pos		|		// select all TX FIFOs
+		0b1UL << USB_OTG_GRSTCTL_TXFFLSH_Pos				// flush TX FIFOs
+	);
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH);			// wait until reset is processed
+
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	usb->GRSTCTL = USB_OTG_GRSTCTL_RXFFLSH;					// flush RX FIFO
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_RXFFLSH);			// wait until reset is processed
+
+	device->DIEPMSK =	0x00000000UL;						// mask all IN endpoint interrupts
+	device->DOEPMSK =	0x00000000UL;						// mask all OUT endpoint interrupts
+	device->DAINTMSK =	0x00000000UL;						// mask all endpoint generated interrupts
+
+	for (i = 0x0UL; i < USB_OTG_ENDPOINT_COUNT; i++) {
+		if (in[i].DIEPCTL & USB_OTG_DIEPCTL_EPENA) {
+			if (i == 0x0UL) { in[i].DIEPCTL = USB_OTG_DIEPCTL_SNAK; }
+			else { in[i].DIEPCTL = USB_OTG_DIEPCTL_EPDIS | USB_OTG_DIEPCTL_SNAK; }
+		} else { in[i].DIEPCTL = 0x00000000UL; }
+
+		if (out[i].DOEPCTL & USB_OTG_DOEPCTL_EPENA) {
+			if (i == 0x0UL) { out[i].DOEPCTL = USB_OTG_DOEPCTL_SNAK; }
+			else { out[i].DOEPCTL = USB_OTG_DOEPCTL_EPDIS | USB_OTG_DOEPCTL_SNAK; }
+		} else { out[i].DOEPCTL = 0x00000000UL; }
+
+		in[i].DIEPTSIZ	= out[i].DOEPTSIZ	= 0x00000000UL;	// clear transfer config
+		in[i].DIEPINT	= out[i].DOEPINT	= 0xFB7FUL;		// clear all interrupt status bits
+	}
+
+	// TODO: code from reference code seems to not have any effect?????
+	// device->DIEPMSK &= ~(USB_OTG_DIEPMSK_TXFURM);
+
+	usb->GINTMSK = 0x00000000UL;							// mask all interrupts
+	usb->GINTSTS = 0xBFFFFFFFUL;							// clear all interrupts TODO: (except for SRQINT??)
+	usb->GINTMSK = (
+		USB_OTG_GINTMSK_WUIM			|					// resume / remote wake-up detected interrupt
+		USB_OTG_GINTMSK_SRQIM			|					// session request / new session detected interrupt
+		USB_OTG_GINTMSK_PXFRM_IISOOXFRM	|					// incomplete periodic transfer interrupt / incomplete isochronous OUT transfer interrupt
+		USB_OTG_GINTMSK_IISOIXFRM		|					// incomplete isochronous IN transfer interrupt
+		USB_OTG_GINTMSK_OEPINT			|					// OUT endpoints interrupt
+		USB_OTG_GINTMSK_IEPINT			|					// IN endpoints interrupt
+		USB_OTG_GINTMSK_ENUMDNEM		|					// enumeration done interrupt
+		USB_OTG_GINTMSK_USBRST			|					// USB reset interrupt
+		USB_OTG_GINTMSK_USBSUSPM		|					// USB suspend interrupt
+		USB_OTG_GINTMSK_RXFLVLM			|					// RX FIFO non empty interrupt
+		USB_OTG_GINTMSK_SOFM			|					// start of frame interrupt
+		USB_OTG_GINTMSK_OTGINT								// OTG interrupt
+	);	// TODO: other interrupts??
+
+	// disconnect
+	*PCGCCTL &= ~(
+		USB_OTG_PCGCCTL_STOPCLK			|
+		USB_OTG_PCGCCTL_GATECLK
+	);
+	device->DCTL |= USB_OTG_DCTL_SDIS;
+
+
+
+	/*usb->GRXFSIZ = 0x80;						// rx FIFO size
 	usb->DIEPTXF0_HNPTXFSIZ = (
 		(0x40 << 16)	|						// tx FIFO size
 		0x80									// FIFO memory offset
-	);  // TODO: research!!!!
+	); */ // TODO: research!!!!
 
-	/* device config */
-	device->DCFG = (
-		0b11U << USB_OTG_DCFG_DSPD_Pos			// use internal FS PHY
-	);
 
-	// device->DCTL = ();
-	// device->DSTS
-
-	// common endpoint initialization
+	/* TODO: why is this not done in the HAL???
 	device->DIEPMSK = (
-		0b1U << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
+		0b1UL << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
 	);
 	device->DOEPMSK = (
-		0b1U << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
+		0b1UL << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
 	);
-
 	device->DAINTMSK = (
-		0b1U << USB_OTG_DAINTMSK_OEPM_Pos		|	// endpoint 0 OUT
-		0b1U << USB_OTG_DAINTMSK_IEPM_Pos		|	// endpoint 0 IN
-		0b1U << (USB_OTG_DAINTMSK_OEPM_Pos + 1)	|	// endpoint 1 OUT
-		0b1U << (USB_OTG_DAINTMSK_IEPM_Pos + 1)		// endpoint 1 IN
+		0b1UL << USB_OTG_DAINTMSK_OEPM_Pos		|	// endpoint 0 OUT
+		0b1UL << USB_OTG_DAINTMSK_IEPM_Pos		|	// endpoint 0 IN
+		0b1UL << (USB_OTG_DAINTMSK_OEPM_Pos + 1)	|	// endpoint 1 OUT
+		0b1UL << (USB_OTG_DAINTMSK_IEPM_Pos + 1)		// endpoint 1 IN
 	);
+	*/
 
-	// TODO: only config EP0 and let other functions do the rest
-	/* endpoint config */
-	in[0].DIEPCTL = (
-		0  // TODO
-	);
-	in[1].DIEPCTL = (
-		0  // TODO
-	);
-
-	out[0].DOEPCTL = (
-		0  // TODO
-	);
-	out[1].DOEPCTL = (
-		0  // TODO
-	);
-
-
-	NVIC->ISER[(USB_to_IRQn(usb) >> 5UL)] = 1UL << (USB_to_IRQn(usb) & 0x1FUL);  // enable OTG_FS_IRQn
-
-	// start USB connection
+	/* // start USB connection
 	device->DCTL |= USB_OTG_DCTL_SDIS;		// soft disconnect
 	device->DCTL &= ~USB_OTG_DCTL_SDIS;		// connect
+	*/
 
-	// TODO: PCGCCTL??
 	return;
 }
 

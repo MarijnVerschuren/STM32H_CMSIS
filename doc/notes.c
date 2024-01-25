@@ -14,6 +14,12 @@
 // SRQSCS (r)	->	Session request success		| !!!!
 
 /// usb->GOTGINT					TODO: [57.14.2		OTG interrupt register]										@2624
+// DBCDNE		->	Debounce done (host only)
+// ADTOCHG		->	A-device timeout change
+// HNGDET		->	Nost negotiation detected
+// HNSSCHG		->	Host negotiation success status change
+// SRSSCHG		->	Session request success status change
+// SEDET		->	Session end detected
 
 /// usb->GAHBCFG					TODO: [57.14.3		OTG AHB configuration register]								@2626
 // PTXFELVL		->	TX FIFO buffer interrupt trigger
@@ -277,3 +283,15 @@
 // PKTCNT			->	packet count
 // XFRSIZ			->	transfer size
 /// (usb + 0xE00)=>PCGCCTL			TODO: [57.14.66		OTG power and clock gating control register]				@2702
+
+
+// USB SOF pin?: https://community.st.com/t5/stm32-mcus-products/usb-sof-pin/td-p/433413
+
+
+// HAL:
+/* stm32h7xx_hal_pcd.c @174
+	// CID?????
+	if ((USBx->CID & (0x1U << 8)) == 0U) {
+		hpcd->Init.dma_enable = 0U;
+	}
+*/

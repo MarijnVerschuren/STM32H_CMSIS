@@ -10,6 +10,11 @@
 
 
 /*!<
+ * constants/definitions
+ * */
+#define USB_OTG_ENDPOINT_COUNT 9
+
+/*!<
  * types
  * */
 typedef enum {
@@ -69,7 +74,7 @@ extern uint32_t USB_kernel_frequency;
 void config_USB_kernel_clock(USB_CLK_SRC_t src);
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
 void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
-// TODO: phy, host mode
+// TODO: external phy, host mode
 
 
 #endif //STM32H_CMSIS_USB_H

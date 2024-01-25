@@ -14,16 +14,20 @@
 
 #if defined(STM32H7xx)
 SYS_CLK_Config_t* sys_config;
+// I2C_setting_t I2C_setting;  // TODO
 
 
 extern void TIM8_UP_TIM13_IRQHandler(void) {
 	TIM8->SR &= ~TIM_SR_UIF;  // clear interrupt flag
-	GPIO_toggle(GPIOE, 1);
+    GPIO_toggle(GPIOA, 1);
 }
 
-extern void EXTI9_5_IRQHandler(void) {
-	EXTI->PR1 |= EXTI_PR1_PR9;  // clear interrupt flag
-	GPIO_toggle(GPIOE, 1);
+extern void EXTI3_IRQHandler(void) {	// button K1
+	EXTI->PR1 |= EXTI_PR1_PR3;  // clear interrupt flag
+}
+
+extern void EXTI9_5_IRQHandler(void) {	// button K2
+	EXTI->PR1 |= EXTI_PR1_PR5;  // clear interrupt flag
 }
 
 
@@ -34,17 +38,17 @@ int main(void) {
 			&sys_config->PLL1_config, 1, 1, 1, 0, 0,		// enable PLL1 (P, Q)
 			PLL_IN_8MHz_16MHz, PLL_VCO_WIDE,				// 12.5MHz in, 192MHz < VCO < 960MHz
 			2/*M*/, 2/*P*/, 4/*Q*/, 2/*R*/, 64/*N*/, 0		// M = 2, P = 2, Q = 4, R = 2, N = 64, N_frac = 0
-	);  // 25MHz / 2 * 64 / (2, 4, 2)
+	);  // 25MHz / 2 * 64 / (2, 4, 2)	=>	(400Mhz, 200Mhz, *400Mhz)
 	set_PLL_config(
 			&sys_config->PLL2_config, 1, 1, 0, 1, 0,		// enable PLL2 (P, R)
 			PLL_IN_8MHz_16MHz, PLL_VCO_WIDE,				// 12.5MHz in, 192MHz < VCO < 960MHz
 			2/*M*/, 4/*P*/, 2/*Q*/, 4/*R*/, 64/*N*/, 0		// M = 2, P = 2, Q = 2, R = 2, N = 64, N_frac = 0
-	);  // 25MHz / 2 * 64 / (4, 2, 4)
+	);  // 25MHz / 2 * 64 / (4, 2, 4)	=>	(200Mhz, *400Mhz, *200Mhz)
 	set_PLL_config(
 			&sys_config->PLL3_config, 0, 0, 0, 0, 0,		// disable PLL3
 			PLL_IN_4MHz_8MHz, PLL_VCO_WIDE,
 			2/*M*/, 2/*P*/, 2/*Q*/, 2/*R*/, 64/*N*/, 0
-	);  // 25MHz / 2 * 64 / (2, 2, 2)
+	);  // 25MHz / 2 * 64 / (2, 2, 2)	=>	(*400Mhz, *400Mhz, *400Mhz)
 	set_RTC_config(sys_config, 0, RCC_SRC_DISABLED, 0);		// disable RTC
 	set_clock_config(
 			sys_config, 0, 1, 0, 0, 0, 1,					// disable HSI, enable HSE, enable HSI48
@@ -74,12 +78,14 @@ int main(void) {
 	start_TIM(TIM8);
 
 	// GPIO config
-	config_GPIO(GPIOE, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);
-	config_GPIO(GPIOD, 9, GPIO_input, GPIO_pull_up, GPIO_open_drain);
+	config_GPIO(GPIOA, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);	// user led D2
+	config_GPIO(GPIOE, 3, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K1
+	config_GPIO(GPIOC, 5, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K2
 
 	// EXTI config
-	config_EXTI(9, GPIOD, 1, 1);
-	start_EXTI(9);
+	config_EXTI(3, GPIOE, 1, 1);
+	config_EXTI(5, GPIOC, 1, 1);
+	start_EXTI(3); start_EXTI(5);
 
 	// MCO config
 	config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);  // 400 MHz
@@ -108,14 +114,14 @@ int main(void) {
 	config_I2C_kernel_clocks(I2C_CLK_SRC_APBx, I2C_CLK_SRC_APBx);
 	I2C_setting_t I2C_setting = {  // 100 KHz
 			APB1_clock_frequency / 4000000,
-			0x13U, 0x0FU, 2, 4
+			0x13UL, 0x0FU, 2, 4
 	};
 	config_I2C(I2C1_SCL_B6, I2C1_SDA_B7, I2C_setting, 0x50);
 
 	// USB config
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
-
+	// TODO: validate / test
 
 	// Watchdog config (32kHz / (4 << prescaler))
 	//config_watchdog(0, 0xFFFUL);	// 1s
@@ -123,9 +129,9 @@ int main(void) {
 
 
 	// main loop
-	for(;;) {
-		TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
-		UART_print(USART1, "Hello World!\n", 100);
+    for(;;) {
+		//TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
+		//UART_print(USART1, "Hello World!\n", 100);
 		//reset_watchdog();
 		delay_ms(100);
 	}

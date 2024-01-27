@@ -121,7 +121,10 @@ int main(void) {
 	// USB config
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
+	config_USB_interface(USB2_OTG_FS);
+	start_USB(USB2_OTG_FS);
 	// TODO: validate / test
+	// TODO: restructure library functions
 
 	// Watchdog config (32kHz / (4 << prescaler))
 	//config_watchdog(0, 0xFFFUL);	// 1s

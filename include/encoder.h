@@ -4,7 +4,6 @@
 
 #ifndef STM32H_CMSIS_ENCODER_H
 #define STM32H_CMSIS_ENCODER_H
-#include "main.h"
 #include "gpio.h"
 #include "tim.h"
 

@@ -70,11 +70,21 @@ extern uint32_t USB_kernel_frequency;
 
 /*!<
  * init
- * */
+ * */  // TODO: collapse unneeded fconfig functions!!!!!!!
 void config_USB_kernel_clock(USB_CLK_SRC_t src);
+
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
 void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
 // TODO: external phy, host mode
 
+void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb);
+void config_USB_interface(USB_OTG_GlobalTypeDef* usb);
 
-#endif //STM32H_CMSIS_USB_H
+// TODO: function for flusing (static)
+void config_USB_RX_FIFO(USB_OTG_GlobalTypeDef* usb, uint32_t size);
+void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size);
+
+void start_USB(USB_OTG_GlobalTypeDef* usb);
+void stop_USB(USB_OTG_GlobalTypeDef* usb);
+
+#endif // STM32H_CMSIS_USB_H

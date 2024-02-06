@@ -12,7 +12,7 @@
 /*!<
  * init
  * */
-void config_PWM(TIM_GPIO_t pwm_pin, uint32_t prescaler, uint32_t period);
+void config_PWM(TIM_GPIO_t pin, uint32_t prescaler, uint32_t period);
 
 
 #endif //STM32H_CMSIS_PWM_H

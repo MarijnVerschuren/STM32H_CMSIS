@@ -32,7 +32,8 @@ static inline uint16_t UART_division(dev_clock_id_t clk, uint32_t baud) {
 		case DEV_CLOCK_ID_APB1:	return USART16_kernel_frequency / baud;
 		case DEV_CLOCK_ID_APB2: return USART234578_kernel_frequency / baud;
 		case DEV_CLOCK_ID_APB4: return LPUART1_kernel_frequency / baud;
-	} return 0;
+		default:				return 0;
+	}
 }
 
 static inline void UART_irq_handler(USART_TypeDef* usart, USART_IRQ_IO_t* io) {
@@ -59,12 +60,12 @@ USART_IRQ_IO_t uart_buf_lp1;	extern void LPUART1_IRQHandler(void)	{ UART_irq_han
  * */
 void config_USART_kernel_clocks(USART_CLK_SRC_t usart16_src, USART_CLK_SRC_t usart234578_src, USART_CLK_SRC_t lpuart1_src) {
 	RCC->D2CCIP2R &= ~(
-			RCC_D2CCIP2R_USART16SEL |
-			RCC_D2CCIP2R_USART28SEL
+		RCC_D2CCIP2R_USART16SEL |
+		RCC_D2CCIP2R_USART28SEL
 	);
 	RCC->D2CCIP2R |= (
-			(usart16_src << RCC_D2CCIP2R_USART16SEL_Pos) |
-			(usart234578_src << RCC_D2CCIP2R_USART28SEL_Pos)
+		(usart16_src << RCC_D2CCIP2R_USART16SEL_Pos) |
+		(usart234578_src << RCC_D2CCIP2R_USART28SEL_Pos)
 	);
 	RCC->D3CCIPR &= ~RCC_D3CCIPR_LPUART1SEL;
 	RCC->D3CCIPR |=	lpuart1_src << RCC_D3CCIPR_LPUART1SEL_Pos;
@@ -75,14 +76,16 @@ void config_USART_kernel_clocks(USART_CLK_SRC_t usart16_src, USART_CLK_SRC_t usa
 		case USART_CLK_SRC_HSI:		USART16_kernel_frequency = HSI_clock_frequency; break;
 		case USART_CLK_SRC_CSI:		USART16_kernel_frequency = CSI_clock_frequency; break;
 		case USART_CLK_SRC_LSE:		USART16_kernel_frequency = LSE_clock_frequency; break;
-	}	switch (usart234578_src) {
+	}
+	switch (usart234578_src) {
 		case USART_CLK_SRC_APBx:	USART234578_kernel_frequency = APB1_clock_frequency; break;	// APB1
 		case USART_CLK_SRC_PLL2_Q:	USART234578_kernel_frequency = PLL2_Q_clock_frequency; break;
 		case USART_CLK_SRC_PLL3_Q:	USART234578_kernel_frequency = PLL3_Q_clock_frequency; break;
 		case USART_CLK_SRC_HSI:		USART234578_kernel_frequency = HSI_clock_frequency; break;
 		case USART_CLK_SRC_CSI:		USART234578_kernel_frequency = CSI_clock_frequency; break;
 		case USART_CLK_SRC_LSE:		USART234578_kernel_frequency = LSE_clock_frequency; break;
-	}	switch (lpuart1_src) {
+	}
+	switch (lpuart1_src) {
 		case USART_CLK_SRC_APBx:	LPUART1_kernel_frequency = APB4_clock_frequency; return;	// APB4
 		case USART_CLK_SRC_PLL2_Q:	LPUART1_kernel_frequency = PLL2_Q_clock_frequency; return;
 		case USART_CLK_SRC_PLL3_Q:	LPUART1_kernel_frequency = PLL3_Q_clock_frequency; return;
@@ -97,43 +100,49 @@ void fconfig_UART(
 		USART_stop_bit_t stop, USART_parity_t parity, uint8_t msb_first,
 		USART_oversampling_t oversampling, USART_word_length_t word_length
 ) {
-	uint8_t			tx_enable = tx != UART_PIN_DISABLE,			rx_enable = rx != UART_PIN_DISABLE;
-	dev_pin_t		tx_dev = *((dev_pin_t*)&tx),				rx_dev = *((dev_pin_t*)&rx);
-	USART_TypeDef	*tx_uart = id_to_dev(tx_dev.dev_id),		*rx_uart = id_to_dev(rx_dev.dev_id),		*uart = NULL;
-	GPIO_TypeDef	*tx_port = int_to_GPIO(tx_dev.port_num),	*rx_port = int_to_GPIO(tx_dev.port_num);
-	if (tx_enable) { uart = tx_uart; fconfig_GPIO(tx_port, tx_dev.pin_num, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_dev.alt_func); }
-	if (rx_enable) { uart = rx_uart; fconfig_GPIO(rx_port, rx_dev.pin_num, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_dev.alt_func); }
-	if (tx_enable && rx_enable && (tx_uart != rx_uart)) { return; }  // error if tx and rx are on different usart devices
+	uint8_t			tx_enable = tx != UART_PIN_DISABLE,
+					rx_enable = rx != UART_PIN_DISABLE;
+	dev_pin_t		tx_pin = *((dev_pin_t*)&tx),
+					rx_pin = *((dev_pin_t*)&rx);
+	USART_TypeDef	*tx_uart = id_to_dev(tx_pin.id),
+					*rx_uart = id_to_dev(rx_pin.id),
+					*uart = NULL;
+	GPIO_TypeDef	*tx_port = int_to_GPIO(tx_pin.port),
+					*rx_port = int_to_GPIO(tx_pin.port);
+	if (tx_enable) { uart = tx_uart; fconfig_GPIO(tx_port, tx_pin.num, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_pin.alt); }
+	if (rx_enable) { uart = rx_uart; fconfig_GPIO(rx_port, rx_pin.num, GPIO_alt_func, GPIO_no_pull, GPIO_push_pull, GPIO_very_high_speed, tx_pin.alt); }
+	if (tx_enable && rx_enable && (tx_uart != rx_uart)) { return; }  // error if devices do not match up (when both enabled)
+
 	enable_dev(uart);
-	uint16_t uart_div = UART_division(tx_dev.dev_id.clk, baud) >> (1 - oversampling);
+	uint16_t uart_div = UART_division(tx_pin.id.clk, baud) >> (1 - oversampling);
 	uart->BRR = ((uart_div & 0xfff0) | ((uart_div & 0xf) >> oversampling));
 	do { uart->CR1 &= ~USART_CR1_UE; } while (uart->CR1 & USART_CR1_UE);
 	uart->CR1 = (
-			(fifo << USART_CR1_FIFOEN_Pos)						|
-			(((word_length >> 1) & 0b1UL) << USART_CR1_M1_Pos)	|
-			((word_length & 0b1UL) << USART_CR1_M0_Pos)			|
-			(oversampling << USART_CR1_OVER8_Pos)				|
-			(((parity >> 1) & 0b1UL) << USART_CR1_PCE_Pos)		|
-			((parity & 0b1UL) << USART_CR1_PS_Pos)
+		(fifo << USART_CR1_FIFOEN_Pos)						|
+		(((word_length >> 1) & 0b1UL) << USART_CR1_M1_Pos)	|
+		((word_length & 0b1UL) << USART_CR1_M0_Pos)			|
+		(oversampling << USART_CR1_OVER8_Pos)				|
+		(((parity >> 1) & 0b1UL) << USART_CR1_PCE_Pos)		|
+		((parity & 0b1UL) << USART_CR1_PS_Pos)
 	);
 	uart->CR2 = (
-			(msb_first << USART_CR2_MSBFIRST_Pos)				|
-			(stop << USART_CR2_STOP_Pos)
+		(msb_first << USART_CR2_MSBFIRST_Pos)				|
+		(stop << USART_CR2_STOP_Pos)
 	);
 	do { uart->CR1 |= (
-			(tx_enable << USART_CR1_TE_Pos)						|
-			(rx_enable << USART_CR1_RE_Pos)						|
-			USART_CR1_UE
+		(tx_enable << USART_CR1_TE_Pos)						|
+		(rx_enable << USART_CR1_RE_Pos)						|
+		USART_CR1_UE
 	); } while (
-			(tx_enable && !(uart->ISR & USART_ISR_TEACK))		||
-			(rx_enable && !(uart->ISR & USART_ISR_REACK))
+		(tx_enable && !(uart->ISR & USART_ISR_TEACK))		||
+		(rx_enable && !(uart->ISR & USART_ISR_REACK))
 	);
 }
 
 void config_UART(USART_GPIO_t tx, USART_GPIO_t rx, uint32_t baud, uint8_t fifo) {
 	fconfig_UART(
-			tx, rx, baud, fifo, USART_STOP_BIT_1, USART_PARITY_DISABLED,
-			0, USART_OVERSAMPLING_16, USART_WORD_LENGTH_8
+		tx, rx, baud, fifo, USART_STOP_BIT_1, USART_PARITY_DISABLED,
+		0, USART_OVERSAMPLING_16, USART_WORD_LENGTH_8
 	);
 }
 

@@ -81,28 +81,30 @@ void config_USB_kernel_clock(USB_CLK_SRC_t src) {
 }
 
 // TODO: ULPI?
-/* uint16_t				dp_ulpi = dp_dev.dev_id.sub,				dn_ulpi = dn_dev.dev_id.sub;
+/* uint16_t				dp_ulpi = dp_pin..id.sub,				dn_ulpi = dn_pin.id.sub;
 dev_id_t				ulpi = {0, 0, 0}; if (dp_ulpi == dn_ulpi) { ulpi = *((dev_id_t*)&dp_ulpi); }
 if (ulpi.clk)			{ enable_id(ulpi); } */
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }
-	dev_pin_t					dp_dev =	*((dev_pin_t*)&dp),				dn_dev = *((dev_pin_t*)&dn);
-	USB_OTG_GlobalTypeDef		*dp_usb =	(void*)(((dp_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
-								*dn_usb =	(void*)(((dn_dev.dev_id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
-								*usb =		NULL;
+	dev_pin_t					dp_pin =	*((dev_pin_t*)&dp),
+								dn_pin = *((dev_pin_t*)&dn);
+	USB_OTG_GlobalTypeDef		*dp_usb =	(void*)(((dp_pin.id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
+								*dn_usb =	(void*)(((dn_pin.id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
+								*usb =		dp_usb;
 	USB_OTG_DeviceTypeDef		*device =	(void*)((uint32_t)usb + 0x800);
 	USB_OTG_INEndpointTypeDef	*in =		(void*)((uint32_t)usb + 0x900);
 	USB_OTG_OUTEndpointTypeDef	*out =		(void*)((uint32_t)usb + 0xB00);
 	volatile uint32_t			*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
-	GPIO_TypeDef				*dp_port = int_to_GPIO(dp_dev.port_num),	*dn_port = int_to_GPIO(dn_dev.port_num);
-	if (dp_usb != dn_usb) { return; } usb = dp_usb;
+	GPIO_TypeDef				*dp_port = int_to_GPIO(dp_pin.port),
+								*dn_port = int_to_GPIO(dn_pin.port);
+	if (dp_usb != dn_usb) { return; }  // error if devices do not match up
 
 	/* GPIO config */
-	fconfig_GPIO(dp_port, dp_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dp_dev.alt_func);
-	fconfig_GPIO(dn_port, dn_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dn_dev.alt_func);
+	fconfig_GPIO(dp_port, dp_pin.num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dp_pin.alt);
+	fconfig_GPIO(dn_port, dn_pin.num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dn_pin.alt);
 
 	/* enable USB device clock and global interrupt */
-	enable_id(dp_dev.dev_id);
+	enable_id(dp_pin.id);
 
 	// TODO: clean up!!
 	uint32_t irqn = USB_to_IRQn(usb);

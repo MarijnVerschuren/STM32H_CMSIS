@@ -11,7 +11,7 @@
 /*!<
  * init
  * */
-void config_encoder_S0S90(TIM_GPIO_t encoder_pin_a, TIM_GPIO_t encoder_pin_b);
+void config_encoder_S0S90(TIM_GPIO_t a, TIM_GPIO_t b);
 /*!<
  * actions
  * */

@@ -67,7 +67,7 @@ void* id_to_dev(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_ID_APB4)	{ return (void*)((id.num << 10) + APB4_BASE); }
 	return (void*)((id.num << 10) + AHB4_BASE);
 }
-void* pin_to_dev(dev_pin_t pin) { return id_to_dev(pin.dev_id); }
+void* pin_to_dev(dev_pin_t pin) { return id_to_dev(pin.id); }
 
 uint8_t dev_to_int(void* dev) {
 	if ((uint32_t)dev < APB1_BASE)		{ return -1; }

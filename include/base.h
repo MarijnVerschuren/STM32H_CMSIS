@@ -29,11 +29,11 @@ typedef struct {
 } dev_id_t;  // 16 bit
 
 typedef struct {
-	dev_id_t	dev_id;
-	uint8_t		alt_func	: 4;
-	uint8_t		port_num	: 4;
-	uint8_t		pin_num		: 4;
-	uint8_t		_			: 4;
+	dev_id_t	id;
+	uint8_t		alt		: 4;
+	uint8_t		port	: 4;
+	uint8_t		num		: 4;
+	uint8_t		_		: 4;
 } dev_pin_t;  // 32 bit
 
 

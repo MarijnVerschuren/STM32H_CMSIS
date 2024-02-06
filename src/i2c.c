@@ -21,25 +21,25 @@ uint8_t I2C_num(I2C_TypeDef* i2c) { dev_id_t id = dev_to_id(i2c); return id.clk 
 
 void reset_tx(I2C_TypeDef* i2c) {
 	i2c->CR2 &= ~(
-			I2C_CR2_SADD        |
-			I2C_CR2_RD_WRN      |
-			I2C_CR2_START       |
-			I2C_CR2_STOP        |
-			I2C_CR2_NBYTES      |
-			I2C_CR2_RELOAD		|
-			I2C_CR2_AUTOEND
+		I2C_CR2_SADD        |
+		I2C_CR2_RD_WRN      |
+		I2C_CR2_START       |
+		I2C_CR2_STOP        |
+		I2C_CR2_NBYTES      |
+		I2C_CR2_RELOAD		|
+		I2C_CR2_AUTOEND
 	);
 	i2c->ICR |= (
-			I2C_ICR_STOPCF		|
-			I2C_ICR_NACKCF
+		I2C_ICR_STOPCF		|
+		I2C_ICR_NACKCF
 	);
 }
 
 void config_tx(I2C_TypeDef* i2c, uint16_t i2c_address, I2C_direction_t dir, uint8_t auto_end) {
 	i2c->CR2 |= (
-			(auto_end != 0) * I2C_CR2_AUTOEND	|
-			(dir << I2C_CR2_RD_WRN_Pos)     	|
-			((i2c_address << ((i2c->CR2 & I2C_CR2_ADD10) == 0)) & I2C_CR2_SADD)
+		(auto_end != 0) * I2C_CR2_AUTOEND	|
+		(dir << I2C_CR2_RD_WRN_Pos)     	|
+		((i2c_address << ((i2c->CR2 & I2C_CR2_ADD10) == 0)) & I2C_CR2_SADD)
 	);
 }
 
@@ -47,8 +47,8 @@ uint8_t config_tx_size(I2C_TypeDef* i2c, uint32_t* size) {
 	uint8_t reload = (*size) > 255;     uint8_t n_bytes = (*size);
 	if (reload) { n_bytes = 255; }      (*size) -= n_bytes;
 	i2c->CR2 |= (
-			(reload << I2C_CR2_RELOAD_Pos)  |
-			(n_bytes << I2C_CR2_NBYTES_Pos)
+		(reload << I2C_CR2_RELOAD_Pos)  |
+		(n_bytes << I2C_CR2_NBYTES_Pos)
 	); return n_bytes;
 }
 
@@ -84,16 +84,22 @@ void config_I2C_kernel_clocks(I2C_CLK_SRC_t i2c123_src, I2C_CLK_SRC_t i2c4_src) 
 
 void fconfig_I2C(I2C_GPIO_t scl, I2C_GPIO_t sda, I2C_setting_t setting, uint16_t own_address, I2C_address_t address_type, uint8_t dual_address, uint8_t dual_mask) {
 	if (scl == I2C_PIN_DISABLE || sda == I2C_PIN_DISABLE) { return; }
-	dev_pin_t		scl_dev = *((dev_pin_t*)&scl),				sda_dev = *((dev_pin_t*)&sda);
-	I2C_TypeDef		*scl_i2c = id_to_dev(scl_dev.dev_id),		*sda_i2c = id_to_dev(sda_dev.dev_id),		*i2c = NULL;
-	GPIO_TypeDef	*scl_port = int_to_GPIO(scl_dev.port_num),	*sda_port = int_to_GPIO(sda_dev.port_num);
-	if (scl_i2c != sda_i2c) { return; } i2c = scl_i2c; enable_dev(i2c);
-	fconfig_GPIO(scl_port, scl_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, scl_dev.alt_func);
-	fconfig_GPIO(sda_port, sda_dev.pin_num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, sda_dev.alt_func);
+	dev_pin_t		scl_pin = *((dev_pin_t*)&scl),
+					sda_pin = *((dev_pin_t*)&sda);
+	I2C_TypeDef		*scl_i2c = id_to_dev(scl_pin.id),
+					*sda_i2c = id_to_dev(sda_pin.id),
+					*i2c = scl_i2c;
+	GPIO_TypeDef	*scl_port = int_to_GPIO(scl_pin.port),
+					*sda_port = int_to_GPIO(sda_pin.port);
+	if (scl_i2c != sda_i2c) { return; }  // error if devices do not match up
+
+	enable_dev(i2c);
+	fconfig_GPIO(scl_port, scl_pin.num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, scl_pin.alt);
+	fconfig_GPIO(sda_port, sda_pin.num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, sda_pin.alt);
 	uint8_t i2c_num = I2C_num(i2c);
 
 	uint32_t ker_clk_freq = 0;
-	switch (scl_dev.dev_id.clk) {
+	switch (scl_pin.id.clk) {
 		case DEV_CLOCK_ID_APB1:			ker_clk_freq = I2C123_kernel_frequency;	break;
 		case DEV_CLOCK_ID_APB4:			ker_clk_freq = I2C4_kernel_frequency;	break;
 	} I2C_peripheral_frequencies[i2c_num] = ker_clk_freq / setting.prescaler;
@@ -179,9 +185,9 @@ uint32_t I2C_master_read(I2C_TypeDef* i2c, uint16_t i2c_address, uint8_t* buffer
 }
 
 uint32_t I2C_master_write_reg(
-		I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
-		I2C_register_address_t reg_address_type, const uint8_t* buffer,
-		uint32_t size, uint32_t timeout
+	I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
+	I2C_register_address_t reg_address_type, const uint8_t* buffer,
+	uint32_t size, uint32_t timeout
 ) {  // -> n unprocessed
 	uint64_t start = tick;
 	reset_tx(i2c);
@@ -212,9 +218,9 @@ uint32_t I2C_master_write_reg(
 }
 
 uint32_t I2C_master_read_reg(
-		I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
-		I2C_register_address_t reg_address_type, uint8_t* buffer,
-		uint32_t size, uint32_t timeout
+	I2C_TypeDef* i2c, uint16_t i2c_address, uint64_t reg_address,
+	I2C_register_address_t reg_address_type, uint8_t* buffer,
+	uint32_t size, uint32_t timeout
 ) {  // -> n unprocessed
 	uint64_t start = tick;
 	reset_tx(i2c);

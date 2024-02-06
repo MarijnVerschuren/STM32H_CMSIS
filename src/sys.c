@@ -182,22 +182,22 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	while ((PWR->CSR1 & PWR_CSR1_ACTVOS) != (config->CORE_VOS_level << PWR_CSR1_ACTVOS_Pos));  // wait until the power scaling level is applied
 	//!< enable and config base clocks
 	RCC->CR = (  // HSI is left on
-			// enable clocks
-			(config->HSE_enable << RCC_CR_HSEON_Pos)						|
-			(config->CSI_enable << RCC_CR_CSION_Pos)						|
-			(config->HSI48_enable << RCC_CR_HSI48ON_Pos)					|
-			RCC_CR_HSION  /* keep HSI on until clock switch */				|
-			// other settings
-			(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)					|
-			(config->HSI_enable_stop_mode << RCC_CR_HSIKERON_Pos)			|
-			(config->CSI_enable_stop_mode << RCC_CR_CSIKERON_Pos)
+		// enable clocks
+		(config->HSE_enable << RCC_CR_HSEON_Pos)						|
+		(config->CSI_enable << RCC_CR_CSION_Pos)						|
+		(config->HSI48_enable << RCC_CR_HSI48ON_Pos)					|
+		RCC_CR_HSION  /* keep HSI on until clock switch */				|
+		// other settings
+		(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)					|
+		(config->HSI_enable_stop_mode << RCC_CR_HSIKERON_Pos)			|
+		(config->CSI_enable_stop_mode << RCC_CR_CSIKERON_Pos)
 	);
 	clock_ready_mask = (
-			(config->HSI_enable << RCC_CR_HSIRDY_Pos)						|
-			(config->HSE_enable << RCC_CR_HSERDY_Pos)						|
-			(config->CSI_enable << RCC_CR_CSIRDY_Pos)						|
-			(config->HSI48_enable << RCC_CR_HSI48RDY_Pos)					|
-			(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)
+		(config->HSI_enable << RCC_CR_HSIRDY_Pos)						|
+		(config->HSE_enable << RCC_CR_HSERDY_Pos)						|
+		(config->CSI_enable << RCC_CR_CSIRDY_Pos)						|
+		(config->HSI48_enable << RCC_CR_HSI48RDY_Pos)					|
+		(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)
 	);
 	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled basic clocks are ready
 	RCC->CR |= config->HSI_div << RCC_CR_HSIDIV_Pos;
@@ -211,53 +211,53 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	if (RCC->CR & RCC_CR_PLL1ON) { RCC->CR &= ~RCC_CR_PLL1ON; while (RCC->CR & RCC_CR_PLL1RDY); }
 	//!< configure PLL clocks
 	RCC->PLLCKSELR = (  // PLL clock source and prescalers (PLL input settings)
-			(config->PLL3_config.M_factor << RCC_PLLCKSELR_DIVM3_Pos)		|
-			(config->PLL2_config.M_factor << RCC_PLLCKSELR_DIVM2_Pos)		|
-			(config->PLL1_config.M_factor << RCC_PLLCKSELR_DIVM1_Pos)		|
-			(config->PLL_src << RCC_PLLCKSELR_PLLSRC_Pos)
+		(config->PLL3_config.M_factor << RCC_PLLCKSELR_DIVM3_Pos)		|
+		(config->PLL2_config.M_factor << RCC_PLLCKSELR_DIVM2_Pos)		|
+		(config->PLL1_config.M_factor << RCC_PLLCKSELR_DIVM1_Pos)		|
+		(config->PLL_src << RCC_PLLCKSELR_PLLSRC_Pos)
 	);
 	RCC->PLLCFGR = (  // PLL enable settings
-			// PLL1
-			(config->PLL1_config.R_enable << RCC_PLLCFGR_DIVR1EN_Pos)		|
-			(config->PLL1_config.Q_enable << RCC_PLLCFGR_DIVQ1EN_Pos)		|
-			(config->PLL1_config.P_enable << RCC_PLLCFGR_DIVP1EN_Pos)		|
-			(config->PLL1_config.input_range << RCC_PLLCFGR_PLL1RGE_Pos)	|
-			(config->PLL1_config.VCO_range << RCC_PLLCFGR_PLL1VCOSEL_Pos)	|
-			(config->PLL1_config.frac_enable << RCC_PLLCFGR_PLL1FRACEN_Pos)	|
-			// PLL2
-			(config->PLL2_config.R_enable << RCC_PLLCFGR_DIVR2EN_Pos)		|
-			(config->PLL2_config.Q_enable << RCC_PLLCFGR_DIVQ2EN_Pos)		|
-			(config->PLL2_config.P_enable << RCC_PLLCFGR_DIVP2EN_Pos)		|
-			(config->PLL2_config.input_range << RCC_PLLCFGR_PLL2RGE_Pos)	|
-			(config->PLL2_config.VCO_range << RCC_PLLCFGR_PLL2VCOSEL_Pos)	|
-			(config->PLL2_config.frac_enable << RCC_PLLCFGR_PLL2FRACEN_Pos)	|
-			// PLL3
-			(config->PLL3_config.R_enable << RCC_PLLCFGR_DIVR3EN_Pos)		|
-			(config->PLL3_config.Q_enable << RCC_PLLCFGR_DIVQ3EN_Pos)		|
-			(config->PLL3_config.P_enable << RCC_PLLCFGR_DIVP3EN_Pos)		|
-			(config->PLL3_config.input_range << RCC_PLLCFGR_PLL3RGE_Pos)	|
-			(config->PLL3_config.VCO_range << RCC_PLLCFGR_PLL3VCOSEL_Pos)	|
-			(config->PLL3_config.frac_enable << RCC_PLLCFGR_PLL3FRACEN_Pos)
+		// PLL1
+		(config->PLL1_config.R_enable << RCC_PLLCFGR_DIVR1EN_Pos)		|
+		(config->PLL1_config.Q_enable << RCC_PLLCFGR_DIVQ1EN_Pos)		|
+		(config->PLL1_config.P_enable << RCC_PLLCFGR_DIVP1EN_Pos)		|
+		(config->PLL1_config.input_range << RCC_PLLCFGR_PLL1RGE_Pos)	|
+		(config->PLL1_config.VCO_range << RCC_PLLCFGR_PLL1VCOSEL_Pos)	|
+		(config->PLL1_config.frac_enable << RCC_PLLCFGR_PLL1FRACEN_Pos)	|
+		// PLL2
+		(config->PLL2_config.R_enable << RCC_PLLCFGR_DIVR2EN_Pos)		|
+		(config->PLL2_config.Q_enable << RCC_PLLCFGR_DIVQ2EN_Pos)		|
+		(config->PLL2_config.P_enable << RCC_PLLCFGR_DIVP2EN_Pos)		|
+		(config->PLL2_config.input_range << RCC_PLLCFGR_PLL2RGE_Pos)	|
+		(config->PLL2_config.VCO_range << RCC_PLLCFGR_PLL2VCOSEL_Pos)	|
+		(config->PLL2_config.frac_enable << RCC_PLLCFGR_PLL2FRACEN_Pos)	|
+		// PLL3
+		(config->PLL3_config.R_enable << RCC_PLLCFGR_DIVR3EN_Pos)		|
+		(config->PLL3_config.Q_enable << RCC_PLLCFGR_DIVQ3EN_Pos)		|
+		(config->PLL3_config.P_enable << RCC_PLLCFGR_DIVP3EN_Pos)		|
+		(config->PLL3_config.input_range << RCC_PLLCFGR_PLL3RGE_Pos)	|
+		(config->PLL3_config.VCO_range << RCC_PLLCFGR_PLL3VCOSEL_Pos)	|
+		(config->PLL3_config.frac_enable << RCC_PLLCFGR_PLL3FRACEN_Pos)
 	);
 	RCC->PLL1DIVR = (
-			(config->PLL1_config.R_factor << RCC_PLL1DIVR_R1_Pos)			|
-			(config->PLL1_config.Q_factor << RCC_PLL1DIVR_Q1_Pos)			|
-			(config->PLL1_config.P_factor << RCC_PLL1DIVR_P1_Pos)			|
-			(config->PLL1_config.N_factor << RCC_PLL1DIVR_N1_Pos)
+		(config->PLL1_config.R_factor << RCC_PLL1DIVR_R1_Pos)			|
+		(config->PLL1_config.Q_factor << RCC_PLL1DIVR_Q1_Pos)			|
+		(config->PLL1_config.P_factor << RCC_PLL1DIVR_P1_Pos)			|
+		(config->PLL1_config.N_factor << RCC_PLL1DIVR_N1_Pos)
 	);
 	RCC->PLL1FRACR = (config->PLL1_config.N_fraction << RCC_PLL1FRACR_FRACN1_Pos);
 	RCC->PLL2DIVR = (
-			(config->PLL2_config.R_factor << RCC_PLL2DIVR_R2_Pos)			|
-			(config->PLL2_config.Q_factor << RCC_PLL2DIVR_Q2_Pos)			|
-			(config->PLL2_config.P_factor << RCC_PLL2DIVR_P2_Pos)			|
-			(config->PLL2_config.N_factor << RCC_PLL2DIVR_N2_Pos)
+		(config->PLL2_config.R_factor << RCC_PLL2DIVR_R2_Pos)			|
+		(config->PLL2_config.Q_factor << RCC_PLL2DIVR_Q2_Pos)			|
+		(config->PLL2_config.P_factor << RCC_PLL2DIVR_P2_Pos)			|
+		(config->PLL2_config.N_factor << RCC_PLL2DIVR_N2_Pos)
 	);
 	RCC->PLL2FRACR = (config->PLL2_config.N_fraction << RCC_PLL2FRACR_FRACN2_Pos);
 	RCC->PLL3DIVR = (
-			(config->PLL3_config.R_factor << RCC_PLL3DIVR_R3_Pos)			|
-			(config->PLL3_config.Q_factor << RCC_PLL3DIVR_Q3_Pos)			|
-			(config->PLL3_config.P_factor << RCC_PLL3DIVR_P3_Pos)			|
-			(config->PLL3_config.N_factor << RCC_PLL3DIVR_N3_Pos)
+		(config->PLL3_config.R_factor << RCC_PLL3DIVR_R3_Pos)			|
+		(config->PLL3_config.Q_factor << RCC_PLL3DIVR_Q3_Pos)			|
+		(config->PLL3_config.P_factor << RCC_PLL3DIVR_P3_Pos)			|
+		(config->PLL3_config.N_factor << RCC_PLL3DIVR_N3_Pos)
 	);
 	RCC->PLL3FRACR = (config->PLL3_config.N_fraction << RCC_PLL3FRACR_FRACN3_Pos);
 	//!< update PLL frequency variables
@@ -286,25 +286,25 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	}
 	//!< enable PLL clocks
 	RCC->CR |= (
-			(config->PLL3_config.enable << RCC_CR_PLL3ON_Pos)				|
-			(config->PLL2_config.enable << RCC_CR_PLL2ON_Pos)				|
-			(config->PLL1_config.enable << RCC_CR_PLL1ON_Pos)
+		(config->PLL3_config.enable << RCC_CR_PLL3ON_Pos)				|
+		(config->PLL2_config.enable << RCC_CR_PLL2ON_Pos)				|
+		(config->PLL1_config.enable << RCC_CR_PLL1ON_Pos)
 	);
 	clock_ready_mask = (
-			(config->PLL3_config.enable << RCC_CR_PLL3RDY_Pos)				|
-			(config->PLL2_config.enable << RCC_CR_PLL2RDY_Pos)				|
-			(config->PLL1_config.enable << RCC_CR_PLL1RDY_Pos)
+		(config->PLL3_config.enable << RCC_CR_PLL3RDY_Pos)				|
+		(config->PLL2_config.enable << RCC_CR_PLL2RDY_Pos)				|
+		(config->PLL1_config.enable << RCC_CR_PLL1RDY_Pos)
 	);
 	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled PLL clocks are ready
 	//!< configure domain pre-scalars
 	RCC->D1CFGR = (
-			(config->SYS_CLK_prescaler << RCC_D1CFGR_D1CPRE_Pos)			|
-			(config->APB3_prescaler << RCC_D1CFGR_D1PPRE_Pos)				|
-			(config->AHB_prescaler << RCC_D1CFGR_HPRE_Pos)
+		(config->SYS_CLK_prescaler << RCC_D1CFGR_D1CPRE_Pos)			|
+		(config->APB3_prescaler << RCC_D1CFGR_D1PPRE_Pos)				|
+		(config->AHB_prescaler << RCC_D1CFGR_HPRE_Pos)
 	);
 	RCC->D2CFGR = (
-			(config->APB2_prescaler << RCC_D2CFGR_D2PPRE2_Pos)				|
-			(config->APB1_prescaler << RCC_D2CFGR_D2PPRE1_Pos)
+		(config->APB2_prescaler << RCC_D2CFGR_D2PPRE2_Pos)				|
+		(config->APB1_prescaler << RCC_D2CFGR_D2PPRE1_Pos)
 	);
 	RCC->D3CFGR = (config->APB4_prescaler << RCC_D3CFGR_D3PPRE_Pos);
 	//!< update frequency variables
@@ -325,8 +325,8 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	FLASH->ACR |= (config->FLASH_latency << FLASH_ACR_LATENCY_Pos);
 	//!< switch sys-clock
 	RCC->CFGR = (
-			(config->RTC_HSE_prescaler << RCC_CFGR_RTCPRE_Pos)	|
-			(config->SYS_CLK_src << RCC_CFGR_SW_Pos)  // switch sys clock
+		(config->RTC_HSE_prescaler << RCC_CFGR_RTCPRE_Pos)	|
+		(config->SYS_CLK_src << RCC_CFGR_SW_Pos)  // switch sys clock
 	);
 	while ((RCC->CFGR & RCC_CFGR_SWS) != (config->SYS_CLK_src << RCC_CFGR_SWS_Pos));	// wait until the sys clock is switched
 	//!< enable/disable HSI
@@ -338,10 +338,10 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	RCC->CSR = (config->LSI_enable << RCC_CSR_LSION_Pos);
 	while ((RCC->CSR & RCC_CSR_LSIRDY) != (config->LSI_enable << RCC_CSR_LSIRDY_Pos));
 	RCC->BDCR = (
-			(config->RTC_enable << RCC_BDCR_RTCEN_Pos)						|
-			(config->RTC_src << RCC_BDCR_RTCSEL_Pos)						|
-			(config->LSE_CSS_enable << RCC_BDCR_LSECSSON_Pos)				|
-			(config->LSE_enable << RCC_BDCR_LSEON_Pos)
+		(config->RTC_enable << RCC_BDCR_RTCEN_Pos)						|
+		(config->RTC_src << RCC_BDCR_RTCSEL_Pos)						|
+		(config->LSE_CSS_enable << RCC_BDCR_LSECSSON_Pos)				|
+		(config->LSE_enable << RCC_BDCR_LSEON_Pos)
 	);
 	while ((RCC->BDCR & RCC_BDCR_LSERDY) != (config->LSE_enable << RCC_BDCR_LSERDY_Pos));
 	RCC->CIER = (config->LSE_CSS_enable << RCC_CIER_LSECSSIE_Pos);
@@ -358,9 +358,9 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	SysTick->LOAD = ((SYS_clock_frequency / (8 - (7 * config->SYSTICK_CLK_src))) / 2000) + 1;
 	SysTick->VAL  = 0;
 	SysTick->CTRL = (
-			(config->SYSTICK_enable << SysTick_CTRL_ENABLE_Pos)				|
-			(config->SYSTICK_IRQ_enable << SysTick_CTRL_TICKINT_Pos)		|
-			(config->SYSTICK_CLK_src << SysTick_CTRL_CLKSOURCE_Pos)
+		(config->SYSTICK_enable << SysTick_CTRL_ENABLE_Pos)				|
+		(config->SYSTICK_IRQ_enable << SysTick_CTRL_TICKINT_Pos)		|
+		(config->SYSTICK_CLK_src << SysTick_CTRL_CLKSOURCE_Pos)
 	);
 	if (config->SYSTICK_IRQ_enable) { SCB->SHPR[(SysTick_IRQn & 0xFUL) - 4UL] = 0xF0UL; }	// set SysTick irq priority
 	//!< reset peripheral kernel clock config

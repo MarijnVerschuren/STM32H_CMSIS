@@ -19,7 +19,30 @@ static inline uint8_t USB_to_IRQn(USB_OTG_GlobalTypeDef* usb) {
 	return OTG_FS_IRQn;
 }
 
+static inline void flush_RX_FIFO(USB_OTG_GlobalTypeDef* usb) {
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	usb->GRSTCTL = USB_OTG_GRSTCTL_RXFFLSH;					// flush RX FIFO
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_RXFFLSH);			// wait until reset is processed
+}
+static inline void flush_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep) {
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	usb->GRSTCTL = (
+		ep << USB_OTG_GRSTCTL_TXFNUM_Pos		|			// select ep TX FIFO
+		0b1UL << USB_OTG_GRSTCTL_TXFFLSH_Pos				// flush TX FIFO
+	);
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH);			// wait until reset is processed
+}
+static inline void flush_RX_FIFOS(USB_OTG_GlobalTypeDef* usb) {
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	usb->GRSTCTL = (
+		0x10UL << USB_OTG_GRSTCTL_TXFNUM_Pos		|		// select all TX FIFOs
+		0b1UL << USB_OTG_GRSTCTL_TXFFLSH_Pos				// flush TX FIFOs
+	);
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH);			// wait until reset is processed
+}
+
 static inline void OTG_common_handler(USB_OTG_GlobalTypeDef* usb) {
+	usb->GINTSTS = USB_OTG_GINTSTS_MMIS;	// clear Mode Mismatch regardless (it does not have any effect)
 	if (usb->GINTSTS & USB_OTG_GINTSTS_USBRST) {  // reset
 		usb->GINTSTS = USB_OTG_GINTSTS_USBRST;
 	}
@@ -31,6 +54,8 @@ static inline void OTG_common_handler(USB_OTG_GlobalTypeDef* usb) {
 	if (usb->GINTSTS & USB_OTG_GINTSTS_RXFLVL) {  // rx FIFO non-empty
 		usb->GINTSTS = USB_OTG_GINTSTS_RXFLVL;
 	}
+
+	// TODO
 }
 
 
@@ -130,16 +155,8 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		0b11UL << USB_OTG_DCFG_DSPD_Pos						// FS on internal PHY
 	);
 
-	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
-	usb->GRSTCTL = (
-		0x10UL << USB_OTG_GRSTCTL_TXFNUM_Pos		|		// select all TX FIFOs
-		0b1UL << USB_OTG_GRSTCTL_TXFFLSH_Pos				// flush TX FIFOs
-	);
-	while (usb->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH);			// wait until reset is processed
-
-	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
-	usb->GRSTCTL = USB_OTG_GRSTCTL_RXFFLSH;					// flush RX FIFO
-	while (usb->GRSTCTL & USB_OTG_GRSTCTL_RXFFLSH);			// wait until reset is processed
+	flush_RX_FIFOS(usb);
+	flush_RX_FIFO(usb);
 
 	device->DIEPMSK =	0x00000000UL;						// mask all IN endpoint interrupts
 	device->DOEPMSK =	0x00000000UL;						// mask all OUT endpoint interrupts
@@ -187,15 +204,6 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	);
 	device->DCTL |= USB_OTG_DCTL_SDIS;
 
-
-
-	/*usb->GRXFSIZ = 0x80;						// rx FIFO size
-	usb->DIEPTXF0_HNPTXFSIZ = (
-		(0x40 << 16)	|						// tx FIFO size
-		0x80									// FIFO memory offset
-	); */ // TODO: research!!!!
-
-
 	/* TODO: why is this not done in the HAL???
 	device->DIEPMSK = (
 		0b1UL << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
@@ -210,13 +218,6 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		0b1UL << (USB_OTG_DAINTMSK_IEPM_Pos + 1)		// endpoint 1 IN
 	);
 	*/
-
-	/* // start USB connection
-	device->DCTL |= USB_OTG_DCTL_SDIS;		// soft disconnect
-	device->DCTL &= ~USB_OTG_DCTL_SDIS;		// connect
-	*/
-
-	return;
 }
 
 void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
@@ -225,7 +226,7 @@ void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 
 
 void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb) {  // TODO: args
-	config_USB_RX_FIFO(usb, 0x80);
+	config_USB_RX_FIFO(usb, 0x80);  // TODO: settings!!!
 	config_USB_TX_FIFO(usb, 0, 0x40);
 	config_USB_TX_FIFO(usb, 1, 0x80);
 	/* if (((USBx->CID & (0x1U << 8)) == 0U) &&
@@ -238,7 +239,6 @@ void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb) {  // TODO: args
 	// TODO: make state struct
 	// TODO: make a general purpose class init funciton within USB.h/c
 }
-
 void config_USB_interface(USB_OTG_GlobalTypeDef* usb) {
 	fconfig_USB_interface(usb);
 }
@@ -250,16 +250,16 @@ void config_USB_RX_FIFO(USB_OTG_GlobalTypeDef* usb, uint32_t size) {
 		(usb->DIEPTXF0_HNPTXFSIZ & 0xFFFF0000UL) |
 		size		// offset
 	);
-	size += (usb->DIEPTXF0_HNPTXFSIZ & 0xFFFFUL);
-	for (uint8_t i = 0; i < 0xFUL - 1; i++) {
+	size += usb->DIEPTXF0_HNPTXFSIZ >> 16;
+	// fix FIFO offsets for all IN endpoints
+	for (uint8_t i = 0; i < 0xEUL; i++) {
 		usb->DIEPTXF[i] = (
 			(usb->DIEPTXF[i] & 0xFFFF0000UL) |
 			size	// offset
 		);
-		size += (usb->DIEPTXF[i] & 0xFFFFUL);
+		size += usb->DIEPTXF[i] >> 16;
 	}
 }
-
 void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size) {
 	uint32_t offset = usb->GRXFSIZ;
 	uint32_t block_size = (usb->DIEPTXF0_HNPTXFSIZ >> 16);
@@ -268,8 +268,9 @@ void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size) {
 		(block_size << 16) |
 		offset
 	);	offset += block_size;
-	for (uint8_t i = 0; i < (0xFUL - 1); i++) {
-		block_size = (usb->DIEPTXF[i] >> 16);
+	// fix FIFO offsets for all IN endpoints (and set size)
+	for (uint8_t i = 0; i < 0xEUL; i++) {
+		block_size = usb->DIEPTXF[i] >> 16;
 		if (ep == i) { block_size = size; }
 		usb->DIEPTXF[i] = (
 			(block_size << 16) |
@@ -280,25 +281,17 @@ void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size) {
 
 
 void start_USB(USB_OTG_GlobalTypeDef* usb) {
-	USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
-	volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
+	register USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
+	register volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
 	usb->GAHBCFG |= USB_OTG_GAHBCFG_GINT;
 	*PCGCCTL &= ~(USB_OTG_PCGCCTL_STOPCLK | USB_OTG_PCGCCTL_GATECLK);
 	device->DCTL &= ~USB_OTG_DCTL_SDIS;
 }
 void stop_USB(USB_OTG_GlobalTypeDef* usb) {
-	USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
-	volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
+	register USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
+	register volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
 	usb->GAHBCFG &= ~USB_OTG_GAHBCFG_GINT;
 	*PCGCCTL &= ~(USB_OTG_PCGCCTL_STOPCLK | USB_OTG_PCGCCTL_GATECLK);
 	device->DCTL |= USB_OTG_DCTL_SDIS;
-
-	// flush fifos TODO: function
-	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
-	usb->GRSTCTL = (
-		0x10UL << USB_OTG_GRSTCTL_TXFNUM_Pos		|		// select all TX FIFOs
-		0b1UL << USB_OTG_GRSTCTL_TXFFLSH_Pos				// flush TX FIFOs
-	);
-	while (usb->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH);			// wait until reset is processed
-
+	flush_RX_FIFOS(usb);
 }

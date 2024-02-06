@@ -80,7 +80,6 @@ void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
 void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb);
 void config_USB_interface(USB_OTG_GlobalTypeDef* usb);
 
-// TODO: function for flusing (static)
 void config_USB_RX_FIFO(USB_OTG_GlobalTypeDef* usb, uint32_t size);
 void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size);
 

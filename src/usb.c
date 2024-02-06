@@ -87,7 +87,7 @@ if (ulpi.clk)			{ enable_id(ulpi); } */
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }
 	dev_pin_t					dp_pin =	*((dev_pin_t*)&dp),
-								dn_pin = *((dev_pin_t*)&dn);
+								dn_pin =	*((dev_pin_t*)&dn);
 	USB_OTG_GlobalTypeDef		*dp_usb =	(void*)(((dp_pin.id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
 								*dn_usb =	(void*)(((dn_pin.id.num - 25) << 17) + USB1_OTG_HS_PERIPH_BASE),
 								*usb =		dp_usb;
@@ -95,8 +95,8 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	USB_OTG_INEndpointTypeDef	*in =		(void*)((uint32_t)usb + 0x900);
 	USB_OTG_OUTEndpointTypeDef	*out =		(void*)((uint32_t)usb + 0xB00);
 	volatile uint32_t			*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
-	GPIO_TypeDef				*dp_port = int_to_GPIO(dp_pin.port),
-								*dn_port = int_to_GPIO(dn_pin.port);
+	GPIO_TypeDef				*dp_port =	int_to_GPIO(dp_pin.port),
+								*dn_port =	int_to_GPIO(dn_pin.port);
 	if (dp_usb != dn_usb) { return; }  // error if devices do not match up
 
 	/* GPIO config */

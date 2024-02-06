@@ -6,6 +6,7 @@
 #define STM32H_CMSIS_USB_H
 #include "main.h"
 #include "sys.h"
+#include "nvic.h"
 #include "gpio.h"
 
 

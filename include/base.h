@@ -61,6 +61,7 @@ void* id_to_dev(dev_id_t id);
 void* pin_to_dev(dev_pin_t pin);
 
 uint8_t dev_to_int(void* dev);
+
 /*!<
  * buffer
  * */

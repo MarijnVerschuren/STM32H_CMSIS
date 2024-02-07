@@ -19,7 +19,7 @@ uint32_t LPTIM345_kernel_frequency =	0;
 /*!<
  * misc
  * */
-uint8_t TIM_to_IRQn(TIM_TypeDef* tim) {
+IRQn_Type TIM_to_IRQn(TIM_TypeDef* tim) {
 	if (tim == TIM1)	{ return TIM1_UP_IRQn; }
 	if (tim == TIM5)	{ return TIM5_IRQn; }
 	if (tim == TIM8)	{ return TIM8_UP_TIM13_IRQn; }
@@ -123,14 +123,11 @@ void stop_TIM(TIM_TypeDef* tim)		{ tim->CR1 &= ~TIM_CR1_CEN; }
  * irq
  * */
 void start_TIM_update_irq(TIM_TypeDef* tim) {
-	uint8_t irqn = TIM_to_IRQn(tim);
-	NVIC->ISER[((irqn) >> 5UL)] = (uint32_t)(1UL << ((irqn) & 0x1FUL));  // NVIC_EnableIRQ
+	enable_IRQ(TIM_to_IRQn(tim));
 	tim->DIER |= TIM_DIER_UIE;
 }
 
 void stop_TIM_update_irq(TIM_TypeDef* tim) {
-	uint8_t irqn = TIM_to_IRQn(tim);
-	NVIC->ICER[((irqn) >> 5UL)] = (uint32_t)(1UL << ((irqn) & 0x1FUL));  // NVIC_DisableIRQ
-	__DSB(); __ISB();  // flush processor pipeline before fetching
+	disable_IRQ(TIM_to_IRQn(tim));
 	tim->DIER &= ~TIM_DIER_UIE;
 }

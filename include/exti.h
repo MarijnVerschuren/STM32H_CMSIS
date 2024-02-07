@@ -6,6 +6,7 @@
 #define STM32H_CMSIS_EXTI_H
 #include "main.h"
 #include "gpio.h"
+#include "nvic.h"
 
 
 /*!<

@@ -6,6 +6,7 @@
 #define STM32H_CMSIS_TIM_H
 #include "main.h"
 #include "sys.h"
+#include "nvic.h"
 
 
 /* BKIN
@@ -199,7 +200,7 @@ extern uint32_t LPTIM345_kernel_frequency;
 /*!<
  * misc
  * */
-uint8_t TIM_to_IRQn(TIM_TypeDef* tim);
+IRQn_Type TIM_to_IRQn(TIM_TypeDef* tim);
 /*!<
  * init
  * */

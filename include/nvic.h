@@ -9,8 +9,8 @@
 /*!<
  * init
  * */
-void enable_IRQ(uint8_t irqn);
-void disable_IRQ(uint8_t irqn);
-void set_IRQ_priority(uint8_t irqn);
+void enable_IRQ(IRQn_Type irqn);
+void disable_IRQ(IRQn_Type irqn);
+void set_IRQ_priority(IRQn_Type irqn, uint32_t priority);
 
 #endif //NVIC_H

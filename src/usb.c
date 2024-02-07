@@ -14,7 +14,7 @@ uint32_t USB_kernel_frequency = 0;
 /*!<
  * static
  * */
-static inline uint8_t USB_to_IRQn(USB_OTG_GlobalTypeDef* usb) {
+static inline IRQn_Type USB_to_IRQn(USB_OTG_GlobalTypeDef* usb) {
 	if (usb == USB_OTG_HS) { return OTG_HS_IRQn; }
 	return OTG_FS_IRQn;
 }
@@ -106,10 +106,9 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	/* enable USB device clock and global interrupt */
 	enable_id(dp_pin.id);
 
-	// TODO: clean up!!
-	uint32_t irqn = USB_to_IRQn(usb);
-	NVIC_SetPriority(irqn, 0);
-	NVIC_EnableIRQ(irqn);
+	IRQn_Type irqn = USB_to_IRQn(usb);
+	set_IRQ_priority(irqn, 0);
+	enable_IRQ(irqn);
 
 	/* power config */
 	PWR->CR3 |= (

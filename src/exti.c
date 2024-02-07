@@ -8,7 +8,7 @@
 /*!<
  * static
  * */
-static inline uint8_t EXTI_line_to_IRQn(uint8_t EXTI_line) {
+static inline IRQn_Type EXTI_line_to_IRQn(uint8_t EXTI_line) {
 	if (EXTI_line < 5)	{ return 6 + EXTI_line; }  // EXTI0_IRQn, EXTI1_IRQn, EXTI2_IRQn, EXTI3_IRQn, EXTI4_IRQn
 	if (EXTI_line < 10) { return EXTI9_5_IRQn; }
 	return EXTI15_10_IRQn;
@@ -31,12 +31,9 @@ void config_EXTI(uint8_t EXTI_line, GPIO_TypeDef* EXTI_port, uint8_t falling_edg
 }
 
 void start_EXTI(uint8_t EXTI_line) {
-	uint8_t irqn = EXTI_line_to_IRQn(EXTI_line);
-	NVIC->ISER[((irqn) >> 5UL)] = (uint32_t)(1UL << ((irqn) & 0x1FUL));  // NVIC_EnableIRQ
+	enable_IRQ(EXTI_line_to_IRQn(EXTI_line));
 }
 
 void stop_EXTI(uint8_t EXTI_line) {
-	uint8_t irqn = EXTI_line_to_IRQn(EXTI_line);
-	NVIC->ICER[((irqn) >> 5UL)] = (uint32_t)(1UL << ((irqn) & 0x1FUL));  // NVIC_DisableIRQ
-	__DSB(); __ISB();  // flush processor pipeline before fetching
+	disable_IRQ(EXTI_line_to_IRQn(EXTI_line));
 }

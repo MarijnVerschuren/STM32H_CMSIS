@@ -32,7 +32,7 @@ extern void EXTI9_5_IRQHandler(void) {	// button K2
 
 
 int main(void) {
-	// clock config
+	/* clock config */
 	sys_config = new_SYS_CLK_config();
 	set_PLL_config(
 			&sys_config->PLL1_config, 1, 1, 1, 0, 0,		// enable PLL1 (P, Q)
@@ -68,7 +68,7 @@ int main(void) {
 	);
 	sys_clock_init(sys_config);
 
-	// TIM config
+	/* TIM config */
 	config_TIM_kernel_clocks(
 			TIM_MUL_2, HRTIM_SRC_CPU, LPTIM_CLK_SRC_APBx,
 			LPTIM_CLK_SRC_APBx, LPTIM_CLK_SRC_APBx
@@ -77,40 +77,40 @@ int main(void) {
 	start_TIM_update_irq(TIM8);
 	start_TIM(TIM8);
 
-	// GPIO config
+	/* GPIO config */
 	config_GPIO(GPIOA, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);	// user led D2
 	config_GPIO(GPIOE, 3, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K1
 	config_GPIO(GPIOC, 5, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K2
 
-	// EXTI config
+	/* EXTI config */
 	config_EXTI(3, GPIOE, 1, 1);
 	config_EXTI(5, GPIOC, 1, 1);
 	start_EXTI(3); start_EXTI(5);
 
-	// MCO config
+	/* MCO config */
 	config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);  // 400 MHz
 
-	// PWM config
+	/* PWM config */
 	config_PWM(TIM1_CH1_A8, TIM_APB2_kernel_frequency / 1000000, 20000);  // 50Hz
 
-	// CRC config
+	/* CRC config */
 	config_CRC();
 
-	// HASH config
+	/* HASH config */
 	// TODO: [3]
 
-	// CRYP config
+	/* CRYP config */
 	// TODO: [4]
 
-	// RNG config
+	/* RNG config */
 	config_RNG_kernel_clock(RNG_CLK_SRC_PLL1_Q);  // 200 MHz
 	// TODO: [5]
 
-	// UART config
+	/* UART config */
 	config_USART_kernel_clocks(USART_CLK_SRC_APBx, USART_CLK_SRC_APBx, USART_CLK_SRC_APBx);
 	config_UART(USART1_TX_A9, USART1_RX_A10, 115200, 1);
 
-	// I2C config
+	/* I2C config */
 	config_I2C_kernel_clocks(I2C_CLK_SRC_APBx, I2C_CLK_SRC_APBx);
 	I2C_setting_t I2C_setting = {  // 100 KHz
 			APB1_clock_frequency / 4000000,
@@ -118,15 +118,19 @@ int main(void) {
 	};
 	config_I2C(I2C1_SCL_B6, I2C1_SDA_B7, I2C_setting, 0x50);
 
-	// USB config
+	/* USB config */
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
+	// config FIFO
+	config_USB_RX_FIFO(USB2_OTG_FS, 0x80);
+	config_USB_TX_FIFO(USB2_OTG_FS, 0, 0x40);
+	config_USB_TX_FIFO(USB2_OTG_FS, 1, 0x80);
+	// config interface
 	config_USB_interface(USB2_OTG_FS);  // TODO: interface types and enpoint configs/usage
+	// start device
 	start_USB(USB2_OTG_FS);
-	// TODO: clean core init code					<<<<<
-	// TODO: continue working on interface init
+	// TODO: continue working on interface init	<<<<<<
 	// TODO: check if interrupt works
-	// TODO: restructure library functions
 	// TODO: write interrupt code
 	// TODO: validate / test
 

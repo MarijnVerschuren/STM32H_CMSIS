@@ -55,7 +55,7 @@ static inline void OTG_common_handler(USB_OTG_GlobalTypeDef* usb) {
 		usb->GINTSTS = USB_OTG_GINTSTS_RXFLVL;
 	}
 
-	// TODO
+	// TODO (HAL_PCD_IRQHandler)
 }
 
 
@@ -85,6 +85,7 @@ void config_USB_kernel_clock(USB_CLK_SRC_t src) {
 dev_id_t				ulpi = {0, 0, 0}; if (dp_ulpi == dn_ulpi) { ulpi = *((dev_id_t*)&dp_ulpi); }
 if (ulpi.clk)			{ enable_id(ulpi); } */
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
+	/* argument and variable setup */
 	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }
 	dev_pin_t					dp_pin =	*((dev_pin_t*)&dp),
 								dn_pin =	*((dev_pin_t*)&dn);
@@ -106,6 +107,7 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	/* enable USB device clock and global interrupt */
 	enable_id(dp_pin.id);
 
+	usb->GAHBCFG = 0x00000000UL;							// clear GAHBCFG config to disable interrupts during setup
 	IRQn_Type irqn = USB_to_IRQn(usb);
 	set_IRQ_priority(irqn, 0);
 	enable_IRQ(irqn);
@@ -118,12 +120,7 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		PWR_CR3_LDOEN
 	);
 
-	// set device info // TODO: remains unchanged??
-	//usb->CID = 0x4D2E562EUL;								// "M.V."
-
-	usb->GAHBCFG = 0x00000000UL;							// clear GAHBCFG config to disable interrupts during setup
-
-	// set phy and device mode
+	/* phy and mode config */
 	usb->GUSBCFG = (
 		USB_OTG_GUSBCFG_FDMOD	|							// force device device mode
 		USB_OTG_GUSBCFG_PHYSEL								// select internal PHY
@@ -137,18 +134,8 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	usb->GCCFG = (
 		USB_OTG_GCCFG_VBDEN		|							// enable Vbus detection
 		USB_OTG_GCCFG_PWRDWN								// power up internal PHY transceiver
-		// TODO: battery charging detection (PWRDWN should then be off)
 	);
 
-	/* select device mode was placed here TODO check */
-	//usb->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;				// force device device mode
-	//while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
-
-	uint8_t i;
-	for (i = 0UL; i < 0xFUL; i++) {
-		usb->DIEPTXF[i] = 0x00000000UL;						// clear IN endpoint FIFO sizes/offsets
-	}
-	// usb->GCCFG |= USB_OTG_GCCFG_VBDEN;  // TODO check (VBDEN enable originally here!)
 	*PCGCCTL = 0x00000000UL;								// restart PHY clock
 
 	device->DCFG = (
@@ -156,9 +143,16 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		0b11UL << USB_OTG_DCFG_DSPD_Pos						// FS on internal PHY
 	);
 
+	/* FIFO buffer setup */
+	uint8_t i;
+	for (i = 0UL; i < 0xFUL; i++) {
+		usb->DIEPTXF[i] = 0x00000000UL;						// clear IN endpoint FIFO sizes/offsets
+	}
+
 	flush_RX_FIFOS(usb);
 	flush_RX_FIFO(usb);
 
+	/* endpoint and device interrupt config */
 	device->DIEPMSK =	0x00000000UL;						// mask all IN endpoint interrupts
 	device->DOEPMSK =	0x00000000UL;						// mask all OUT endpoint interrupts
 	device->DAINTMSK =	0x00000000UL;						// mask all endpoint generated interrupts
@@ -178,14 +172,13 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		in[i].DIEPINT	= out[i].DOEPINT	= 0xFB7FUL;		// clear all interrupt status bits
 	}
 
-	// TODO: code from reference code seems to not have any effect?????
-	// device->DIEPMSK &= ~(USB_OTG_DIEPMSK_TXFURM);
-
+	/* usb core interrupt config */
 	usb->GINTMSK = 0x00000000UL;							// mask all interrupts
-	usb->GINTSTS = 0xBFFFFFFFUL;							// clear all interrupts TODO: (except for SRQINT??)
+	usb->GINTSTS = 0xBFFFFFFFUL;							// clear all interrupts (except for session request interrupt)
 	usb->GINTMSK = (
 		USB_OTG_GINTMSK_WUIM			|					// resume / remote wake-up detected interrupt
 		USB_OTG_GINTMSK_SRQIM			|					// session request / new session detected interrupt
+		USB_OTG_GINTMSK_DISCINT			|					// disconnect detected interrupt
 		USB_OTG_GINTMSK_PXFRM_IISOOXFRM	|					// incomplete periodic transfer interrupt / incomplete isochronous OUT transfer interrupt
 		USB_OTG_GINTMSK_IISOIXFRM		|					// incomplete isochronous IN transfer interrupt
 		USB_OTG_GINTMSK_OEPINT			|					// OUT endpoints interrupt
@@ -196,29 +189,17 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 		USB_OTG_GINTMSK_RXFLVLM			|					// RX FIFO non empty interrupt
 		USB_OTG_GINTMSK_SOFM			|					// start of frame interrupt
 		USB_OTG_GINTMSK_OTGINT								// OTG interrupt
-	);	// TODO: other interrupts??
+	);
 
-	// disconnect
+	/* disconnect */
 	*PCGCCTL &= ~(
 		USB_OTG_PCGCCTL_STOPCLK			|
 		USB_OTG_PCGCCTL_GATECLK
 	);
 	device->DCTL |= USB_OTG_DCTL_SDIS;
 
-	/* TODO: why is this not done in the HAL???
-	device->DIEPMSK = (
-		0b1UL << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
-	);
-	device->DOEPMSK = (
-		0b1UL << USB_OTG_DIEPMSK_XFRCM_Pos		// enable transfer completed interrupt
-	);
-	device->DAINTMSK = (
-		0b1UL << USB_OTG_DAINTMSK_OEPM_Pos		|	// endpoint 0 OUT
-		0b1UL << USB_OTG_DAINTMSK_IEPM_Pos		|	// endpoint 0 IN
-		0b1UL << (USB_OTG_DAINTMSK_OEPM_Pos + 1)	|	// endpoint 1 OUT
-		0b1UL << (USB_OTG_DAINTMSK_IEPM_Pos + 1)		// endpoint 1 IN
-	);
-	*/
+	/* add library signature */
+	USB2_OTG_FS->CID = 0x4D2E562EUL;								// "M.V."
 }
 
 void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
@@ -227,17 +208,8 @@ void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 
 
 void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb) {  // TODO: args
-	config_USB_RX_FIFO(usb, 0x80);  // TODO: settings!!!
-	config_USB_TX_FIFO(usb, 0, 0x40);
-	config_USB_TX_FIFO(usb, 1, 0x80);
-	/* if (((USBx->CID & (0x1U << 8)) == 0U) &&
-		(hpcd->Init.battery_charging_enable == 1U))
-	{
-		/* Enable USB Transceiver
-		USBx->GCCFG |= USB_OTG_GCCFG_PWRDWN;
-	}*/
-	// TODO: keep track of configuration, interface classes and enpoint behavior
 	// TODO: make state struct
+	// TODO: keep track of configuration, interface classes and enpoint behavior
 	// TODO: make a general purpose class init funciton within USB.h/c
 }
 void config_USB_interface(USB_OTG_GlobalTypeDef* usb) {

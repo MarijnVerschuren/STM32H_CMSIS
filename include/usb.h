@@ -15,8 +15,9 @@
  * */
 #define USB_OTG_ENDPOINT_COUNT 9
 
+
 /*!<
- * types
+ * enum types
  * */
 typedef enum {
 	USB_CLK_SRC_DISABLED =	0b00,	//R
@@ -31,14 +32,8 @@ typedef enum {
 	USB1_FS_SOF_A4 =		0x040C0039,
 	USB1_FS_ID_B12 =		0x0C1C0039,
 	USB1_FS_DN_B14 =		0x0E1C0039,
-	USB1_FS_DM_B14 =		USB1_FS_DN_B14,
+	USB1_FS_DM_B14 =		USB1_FS_DN_B14,  // D(Negative) instead of D(Minus)
 	USB1_FS_DP_B15 =		0x0F1C0039,
-	// USB1_HS
-	USB1_HS_SOF_A4 =		USB1_FS_SOF_A4,
-	USB1_HS_ID_B12 =		USB1_FS_ID_B12,
-	USB1_HS_DN_B14 =		USB1_FS_DN_B14,  // D(Negative) instead of D(Minus)
-	USB1_HS_DM_B14 =		USB1_FS_DN_B14,
-	USB1_HS_DP_B15 =		USB1_FS_DP_B15,
 	// USB1_HS (ULPI)
 	USB1_HS_ULPI_CLK_A5 =	0x050AE839,
 	USB1_HS_ULPI_D0_A3 =	0x030AE839,
@@ -64,9 +59,28 @@ typedef enum {
 
 
 /*!<
+ * struct types
+ * */
+typedef struct {
+} USB_IEP_status_t;  // (host) in endpoint status type
+
+typedef struct {
+	void* buffer;
+	uint32_t count;
+} USB_OEP_status_t;  // (host) out endpoint status type
+
+typedef struct {
+	USB_IEP_status_t	IEP[16];
+	USB_OEP_status_t	OEP[16];
+	uint32_t			setup[16];	// max controll stage data size: 64B TODO: HAL has 12???
+	// classes / interfaces ??
+} USB_status_t;
+
+
+/*!<
  * variables
  * */
-extern uint32_t USB_kernel_frequency;
+extern uint32_t		USB_kernel_frequency;
 
 
 /*!<
@@ -86,5 +100,7 @@ void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size);
 
 void start_USB(USB_OTG_GlobalTypeDef* usb);
 void stop_USB(USB_OTG_GlobalTypeDef* usb);
+
+// TODO: deinit func
 
 #endif // STM32H_CMSIS_USB_H

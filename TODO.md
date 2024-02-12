@@ -10,17 +10,18 @@
 >* LPTIM
 
 >### Medium Priority
+>* Make library components toggleable using defines
 >* Redo sys_clock_init function to allow re-configuration (VOS downscaling etc...)
->* Move MCO source config from sys.x to mco.x
 >* RTC
+>* USB composite device!!
 
 >### Low Priority
 >* timer BKIN config
 >* Low power
+>* USB host
 
 >### Features
 >* RCC backup domain (RCC->BDCR)
->* MCO (micro-controller clock output) (RCC->CFGR)
 >* STOP mode config (RCC->CFGR:STOPWUCK)
 >* clock trimming (RCC->ICSCR, RCC->HSICFGR, RCC->CRRCR, RCC->CSICFGR)
 

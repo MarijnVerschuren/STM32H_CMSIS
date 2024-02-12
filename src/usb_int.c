@@ -25,6 +25,15 @@ typedef struct {
  * */
 extern USB_status_t* USB_status[2];
 
+
+/*!<
+ * functions
+ * */
+extern inline void flush_RX_FIFO(USB_OTG_GlobalTypeDef* usb);
+extern inline void flush_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep);
+extern inline void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb);
+
+
 /*!<
  * static
 * */
@@ -37,24 +46,29 @@ static inline void OTG_common_iep_handler(USB_OTG_GlobalTypeDef* usb, uint8_t ep
 		((device->DIEPEMPMSK >> ep_num) & 0b1UL) << USB_OTG_DIEPINT_TXFE_Pos	// include TXFE interrupt if enabled
 	);
 
-	// TODO: @1202
 	if (ep_int & USB_OTG_DIEPINT_XFRC) {
-
+		device->DIEPEMPMSK &= ~(0b1UL << ep_num);	// mask interrupt
+		ep->DIEPINT |= USB_OTG_DIEPINT_XFRC;
+		// TODO: DMA? @1209
+		// USBD_LL_DataInStage TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	}
 	if (ep_int & USB_OTG_DIEPINT_TOC) {
-
+		ep->DIEPINT |= USB_OTG_DIEPINT_TOC;
 	}
 	if (ep_int & USB_OTG_DIEPINT_ITTXFE) {
-
+		ep->DIEPINT |= USB_OTG_DIEPINT_ITTXFE;
 	}
 	if (ep_int & USB_OTG_DIEPINT_INEPNE) {
-
+		ep->DIEPINT |= USB_OTG_DIEPINT_INEPNE;
 	}
 	if (ep_int & USB_OTG_DIEPINT_EPDISD) {
-
+		flush_TX_FIFO(usb, ep_num);
+		// TODO: ISO? @1245
+		ep->DIEPINT |= USB_OTG_DIEPINT_EPDISD;
 	}
 	if (ep_int & USB_OTG_DIEPINT_TXFE) {
-
+		// TODO: @1260
+		// PCD_WriteEmptyTxFifo TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	}
 }
 static inline void OTG_common_oep_handler(USB_OTG_GlobalTypeDef* usb, uint8_t ep_num) {
@@ -63,24 +77,31 @@ static inline void OTG_common_oep_handler(USB_OTG_GlobalTypeDef* usb, uint8_t ep
 
 	uint32_t ep_int =			ep->DOEPINT & device->DOEPMSK;					// get all triggered interrupts
 
-	// TODO: @1130
 	if (ep_int & USB_OTG_DOEPINT_XFRC) {
-
+		ep->DOEPINT |= USB_OTG_DOEPINT_XFRC;
+		// TODO: @1133
+		// PCD_EP_OutXfrComplete_int TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	}
 	if (ep_int & USB_OTG_DOEPINT_STUP) {
-
+		ep->DOEPINT |= USB_OTG_DOEPINT_STUP;
+		// TODO: @1140
+		// PCD_EP_OutSetupPacket_int TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	}
 	if (ep_int & USB_OTG_DOEPINT_OTEPDIS) {
-
+		ep->DOEPINT |= USB_OTG_DOEPINT_OTEPDIS;
 	}
 	if (ep_int & USB_OTG_DOEPINT_EPDISD) {
-
+		if (usb->GINTSTS & USB_OTG_GINTSTS_BOUTNAKEFF) {
+			device->DCTL |= USB_OTG_DCTL_CGONAK;
+		}
+		// TODO: ISO? @1158
+		ep->DOEPINT |= USB_OTG_DOEPINT_EPDISD;
 	}
 	if (ep_int & USB_OTG_DOEPINT_OTEPSPR) {
-
+		ep->DOEPINT |= USB_OTG_DOEPINT_OTEPSPR;
 	}
 	if (ep_int & USB_OTG_DOEPINT_NAK) {
-
+		ep->DOEPINT |= USB_OTG_DOEPINT_NAK;
 	}
 }
 static inline void OTG_common_handler(USB_OTG_GlobalTypeDef* usb) {
@@ -144,58 +165,86 @@ static inline void OTG_common_handler(USB_OTG_GlobalTypeDef* usb) {
 		}
 	}
 
-	/* suspend interrupt */
-	if (usb->GINTSTS & USB_OTG_GINTSTS_USBSUSP) {
-		// TODO: @1297
-	}
-
-	/* wake-up interrupt */
-	if (usb->GINTSTS & USB_OTG_GINTSTS_WKUINT) {
-		// TODO: @1269
-	}
-
 	/* reset interrupt */
 	if (usb->GINTSTS & USB_OTG_GINTSTS_USBRST) {
-		// TODO: @1337
+		device->DCTL &= ~USB_OTG_DCTL_RWUSIG;		// clear remote wake-up signaling TODO: needed?
+		flush_TX_FIFOS(usb);
+		// TODO: general core reset func (code used in init)
+		// TODO: @1342
+
+		device->DCFG &= ~USB_OTG_DCFG_DAD;			// reset device address
+		// USB_EP0_OutStart TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		usb->GINTSTS |= USB_OTG_GINTSTS_USBRST;
 	}
 
 	/* enumeration done interrupt */
 	if (usb->GINTSTS & USB_OTG_GINTSTS_ENUMDNE) {
 		// TODO: @1386
+		// USB_ActivateSetup TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		// hpcd->Init.speed = USB_GetDevSpeed(hpcd->Instance);
+		// USB_SetTurnaroundTime TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		// HAL_PCD_ResetCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		usb->GINTSTS |= USB_OTG_GINTSTS_ENUMDNE;
 	}
 
 	/* start of frame interrupt */
 	if (usb->GINTSTS & USB_OTG_GINTSTS_SOF) {
 		// TODO: @1406
+		// HAL_PCD_SOFCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		usb->GINTSTS |= USB_OTG_GINTSTS_SOF;
 	}
 
 	/* global OUT NAK effective interrupt */
 	if (usb->GINTSTS & USB_OTG_GINTSTS_BOUTNAKEFF) {
-		// TODO: @1418
-	}
-
-	/* incomplete isochronous IN interrupt */
-	if (usb->GINTSTS & USB_OTG_GINTSTS_IISOIXFR) {
-		// TODO: @1433
-	}
-
-	/* incomplete isochronous OUT interrupt */
-	if (usb->GINTSTS & USB_OTG_GINTSTS_PXFR_INCOMPISOOUT) {
-		// TODO: @1453
+		usb->GINTMSK &= ~USB_OTG_GINTMSK_GONAKEFFM;  // mask global OUT NAK effective interrupt
+		// TODO: ISO? @1422
 	}
 
 	/* connection event interrupt */
 	if (usb->GINTSTS & USB_OTG_GINTSTS_SRQINT) {
 		// TODO: @1479
+		// HAL_PCD_ConnectCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		usb->GINTSTS |= USB_OTG_GINTSTS_SRQINT;
 	}
 
 	/* disconnection event interrupt */
 	if (usb->GINTSTS & USB_OTG_GINTSTS_OTGINT) {
-		// TODO: @1491
+		uint32_t tmp = usb->GOTGINT;
+		if (tmp & USB_OTG_GOTGINT_SEDET) {
+			// TODO: @1500
+			// HAL_PCD_DisconnectCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		}
+		usb->GOTGINT |= tmp;  // restore GOTGINT
 	}
 
 	// TODO: other interrupts??
-	// if (usb->GINTSTS & USB_OTG_GINTSTS_LPMINT) {}  // @1311
+
+	// TODO: (HAL_PCD_IRQHandler @1085-1115)
+	/* TODO: ISO?
+	/* incomplete isochronous IN interrupt * /
+	if (usb->GINTSTS & USB_OTG_GINTSTS_IISOIXFR) {
+		// TODO: @1433
+	}
+	/* incomplete isochronous OUT interrupt * /
+	if (usb->GINTSTS & USB_OTG_GINTSTS_PXFR_INCOMPISOOUT) {
+		// TODO: @1453
+	}
+	*/
+
+	/* TODO: LPM?
+	/* suspend interrupt * /
+	if (usb->GINTSTS & USB_OTG_GINTSTS_USBSUSP) {
+		// TODO: @1297
+	}
+	/* wake-up interrupt * /
+	if (usb->GINTSTS & USB_OTG_GINTSTS_WKUINT) {
+		// TODO: @1269
+	}
+	/* LPM interrupt * /
+	if (usb->GINTSTS & USB_OTG_GINTSTS_LPMINT) {
+		// TODO: @1311
+	}
+	*/
 }
 
 

@@ -97,8 +97,25 @@ static inline void OTG_common_iep_handler(USB_handle_t* handle, uint8_t ep_num) 
 
 	/* transmit FIFO empty interrupt */
 	if (ep_int & USB_OTG_DIEPINT_TXFE) {
-		// TODO: @1260
-		// PCD_WriteEmptyTxFifo TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		if (iep->count <= iep->size) {
+			uint32_t	len, len32, i;
+			uint32_t	buffer = (uint32_t)iep->buffer;
+			uint8_t		*src, *FIFO = (uint8_t*)((uint32_t)USB + (0x1000UL * (ep_num + 1U)));
+			while (iep->size && iep->count < iep->size) {
+				len =	iep->size - iep->count;
+				len32 =	((len > iep->packet_size ? iep->packet_size : len) + 3U) >> 2U;
+				if ((I_EP->DTXFSTS & 0xFFFFUL) < len32) { break; }
+				src =	iep->buffer;
+				for (i = 0UL; i < len32; i++) {
+					*FIFO = __UNALIGNED_UINT32_READ(src);
+					src++; src++; src++; src++;  // 4x inc is faster than an add due to pipelining
+				} iep->buffer +=	len;
+			} iep->count +=			((uint32_t)iep->buffer) - buffer;
+			if (iep->size <= iep->count) {
+				// mask TX FIFO empty interrupt after all data is sent
+				DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);
+			}
+		}
 	}
 }
 
@@ -168,16 +185,19 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 		switch (RX_status.PKTSTS) {
 			case 0b0010U:  // OUT data packet
 				if (!RX_status.BCNT) { break; }
-				const uint32_t	words = (RX_status.BCNT >> 2UL) + ((RX_status.BCNT & 0x3UL) != 0x0UL);
-				uint32_t*		dest = oep->buffer;
+				const uint32_t	words = ((RX_status.BCNT + 3U) >> 2U);  // + 3UL to yield round up
+				uint32_t		buffer = (uint32_t)oep->buffer;
 				for (uint32_t i = 0UL; i < words; i++) {
 					__UNALIGNED_UINT32_WRITE(oep->buffer, *FIFO);
-					dest += 4UL;
-				} oep->count += ((uint32_t)dest) - ((uint32_t)oep->buffer);
+					// 4x inc is faster than an add due to pipelining
+					oep->buffer++; oep->buffer++;
+					oep->buffer++; oep->buffer++;
+				} oep->count += ((uint32_t)oep->buffer) - buffer;
 				break;
 			case 0b0110U:  // SETUP data packet
+				// TODO: seperate SETUP data array needed??????
 				__UNALIGNED_UINT32_WRITE(handle->setup, *FIFO);
-				__UNALIGNED_UINT32_WRITE(handle->setup, *FIFO);
+				__UNALIGNED_UINT32_WRITE(&handle->setup[1], *FIFO);
 				oep->count += 8UL;
 				break;
 			// TODO: other cases ????

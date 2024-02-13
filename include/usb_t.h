@@ -23,13 +23,21 @@ typedef struct {
 typedef struct {
 	USB_OTG_INEndpointTypeDef*	ep;
 	USB_class_t*				class;
+
+	uint32_t					packet_size;	// max packet size
+
+	void*						buffer;			// TX buffer
+	uint32_t					size;			// to send
+	uint32_t					count;			// sent
 } USB_IEP_t;  // (host) in endpoint status type
 
 typedef struct {
 	USB_OTG_OUTEndpointTypeDef*	ep;
 	USB_class_t*				class;
-	void*						buffer;
-	uint32_t					count;
+
+	void*						buffer;			// RX buffer
+	uint32_t					size;			// RX buffer size
+	uint32_t					count;			// received
 } USB_OEP_t;  // (host) out endpoint status type
 
 

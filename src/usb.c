@@ -10,7 +10,7 @@
 /*!<
  * variables
  * */
-USB_handle_t*	USB_status[2] = {NULL, NULL};  // status for USB1 (HS), USB2 (FS)
+USB_handle_t*	USB_handle[2] = {NULL, NULL};  // status for USB1 (HS), USB2 (FS)
 uint32_t		USB_kernel_frequency = 0;
 
 
@@ -187,10 +187,10 @@ void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 
 
 void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb) {  // TODO: args
-	USB_handle_t *status = USB_status[((uint32_t)usb >> 0x13UL) & 0b1UL];
-	if (!status) {  // create status if not available
-		USB_status[((uint32_t)usb >> 0x13UL) & 0b1UL] =\
-		status = malloc(sizeof(USB_status));
+	USB_handle_t *handle = USB_handle[((uint32_t)usb >> 0x13UL) & 0b1UL];
+	if (!handle) {  // create status if not available
+		USB_handle[((uint32_t)usb >> 0x13UL) & 0b1UL] =\
+		handle = malloc(sizeof(USB_handle_t));
 	}
 
 	// TODO: keep track of configuration, interface classes and enpoint behavior

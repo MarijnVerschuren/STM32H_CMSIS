@@ -3,12 +3,14 @@
 //
 
 #include "usb.h"
+#include "usb_t.h"  // TODO remove file and hide contents
+
 
 
 /*!<
  * variables
  * */
-USB_status_t*	USB_status[2] = {NULL, NULL};  // status for USB1, USB2
+USB_handle_t*	USB_status[2] = {NULL, NULL};  // status for USB1 (HS), USB2 (FS)
 uint32_t		USB_kernel_frequency = 0;
 
 
@@ -20,12 +22,12 @@ static inline IRQn_Type USB_to_IRQn(USB_OTG_GlobalTypeDef* usb) {
 	return OTG_FS_IRQn;
 }
 
-inline void flush_RX_FIFO(USB_OTG_GlobalTypeDef* usb) {
+void flush_RX_FIFO(USB_OTG_GlobalTypeDef* usb) {
 	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
 	usb->GRSTCTL = USB_OTG_GRSTCTL_RXFFLSH;					// flush RX FIFO
 	while (usb->GRSTCTL & USB_OTG_GRSTCTL_RXFFLSH);			// wait until reset is processed
 }
-inline void flush_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep) {
+void flush_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep) {
 	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
 	usb->GRSTCTL = (
 		ep << USB_OTG_GRSTCTL_TXFNUM_Pos		|			// select ep TX FIFO
@@ -33,7 +35,7 @@ inline void flush_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep) {
 	);
 	while (usb->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH);			// wait until reset is processed
 }
-inline void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb) {
+void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb) {
 	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
 	usb->GRSTCTL = (
 		0x10UL << USB_OTG_GRSTCTL_TXFNUM_Pos		|		// select all TX FIFOs
@@ -185,7 +187,7 @@ void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 
 
 void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb) {  // TODO: args
-	USB_status_t *status = USB_status[((uint32_t)usb >> 0x13UL) & 0b1UL];
+	USB_handle_t *status = USB_status[((uint32_t)usb >> 0x13UL) & 0b1UL];
 	if (!status) {  // create status if not available
 		USB_status[((uint32_t)usb >> 0x13UL) & 0b1UL] =\
 		status = malloc(sizeof(USB_status));

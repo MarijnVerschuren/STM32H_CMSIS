@@ -11,13 +11,13 @@
 
 
 /*!<
- * constants/definitions
+ * definitions
  * */
 #define USB_OTG_ENDPOINT_COUNT 9
 
 
 /*!<
- * enum types
+ * types
  * */
 typedef enum {
 	USB_CLK_SRC_DISABLED =	0b00,	//R
@@ -56,25 +56,6 @@ typedef enum {
 	USB2_FS_DM_A11 =		USB2_FS_DN_A11,
 	USB2_FS_DP_A12 =		0x0C0A003B
 } USB_GPIO_t;
-
-
-/*!<
- * struct types
- * */
-typedef struct {
-} USB_IEP_status_t;  // (host) in endpoint status type
-
-typedef struct {
-	void* buffer;
-	uint32_t count;
-} USB_OEP_status_t;  // (host) out endpoint status type
-
-typedef struct {
-	USB_IEP_status_t	IEP[16];
-	USB_OEP_status_t	OEP[16];
-	uint32_t			setup[16];	// max controll stage data size: 64B TODO: HAL has 12???
-	// classes / interfaces ??
-} USB_status_t;
 
 
 /*!<

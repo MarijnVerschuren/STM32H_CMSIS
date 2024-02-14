@@ -53,4 +53,6 @@ typedef struct {
 	// classes / interfaces ??
 } USB_handle_t;
 
+// TODO: move these definitions and all functions that use them from usb.c to usb_int.c
+
 #endif //USB_T_H

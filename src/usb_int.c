@@ -49,22 +49,31 @@ extern void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb);
 * */
 /*!< setup */
 // TODO: setup code will probably need its own functions
+static inline void start_OEP0(USB_handle_t* handle) {
+	USB_OEP_t	*oep =		*handle->OEP;
+	// TODO: CORE VERISON?	[stm32h7xx_ll_usb.c] @2263
+	O_EP->DOEPTSIZ = (
+		0x18UL									|	// expect 24 bytes to be received
+		(0b1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos)	|	// set bit (will be reset when packet is received)
+		(0x3UL << USB_OTG_DOEPTSIZ_STUPCNT_Pos)		// set max number of back to back packets to 3
+	);
+	// TODO: DMA?			[stm32h7xx_ll_usb.c] @2206
+}
 
 /*!< IRQ handleing */
 static inline void OTG_common_iep_handler(USB_handle_t* handle, uint8_t ep_num) {
-	USB_OTG_DeviceTypeDef		*device =	(void*)((uint32_t)handle + USB_OTG_DEVICE_BASE);
-	USB_IEP_t					*iep	=	handle->IEP[ep_num];
+	USB_IEP_t	*iep =		handle->IEP[ep_num];
 
-	uint32_t ep_int =			(
-		I_EP->DIEPINT & device->DOEPMSK &											// get all triggered interrupts
-		((device->DIEPEMPMSK >> ep_num) & 0b1UL) << USB_OTG_DIEPINT_TXFE_Pos	// include TXFE interrupt if enabled
+	uint32_t	ep_int =	(
+		I_EP->DIEPINT & DEV->DOEPMSK &											// get all triggered interrupts
+		((DEV->DIEPEMPMSK >> ep_num) & 0b1UL) << USB_OTG_DIEPINT_TXFE_Pos	// include TXFE interrupt if enabled
 	);
 
 	/* transfer complete interrupt */
 	if (ep_int & USB_OTG_DIEPINT_XFRC) {
-		device->DIEPEMPMSK &= ~(0b1UL << ep_num);	// mask interrupt
+		DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);	// mask interrupt
 		I_EP->DIEPINT |= USB_OTG_DIEPINT_XFRC;
-		// TODO: DMA? @1209
+		// TODO: DMA?				[stm32h7xx_hal_pcd.c] @1209
 		if (
 			ep_num && iep->class->data_in &&		// make sure the class has a data_in function
 			handle->state == USB_configured		// make sure the device is configured
@@ -76,7 +85,7 @@ static inline void OTG_common_iep_handler(USB_handle_t* handle, uint8_t ep_num) 
 	/* endpoint disabled interrupt */
 	if (ep_int & USB_OTG_DIEPINT_EPDISD) {
 		flush_TX_FIFO(handle->usb, ep_num);
-		// TODO: ISO? @1245
+		// TODO: ISO?				[stm32h7xx_hal_pcd.c] @1245
 		I_EP->DIEPINT |= USB_OTG_DIEPINT_EPDISD;
 	}
 
@@ -120,32 +129,34 @@ static inline void OTG_common_iep_handler(USB_handle_t* handle, uint8_t ep_num) 
 }
 
 static inline void OTG_common_oep_handler(USB_handle_t* handle, uint8_t ep_num) {
-	USB_OTG_DeviceTypeDef		*device =	(void*)((uint32_t)handle->usb + USB_OTG_DEVICE_BASE);
-	USB_OEP_t					*oep	=	handle->OEP[ep_num];
+	USB_OEP_t	*oep =		handle->OEP[ep_num];
 
-	uint32_t ep_int =			O_EP->DOEPINT & device->DOEPMSK;					// get all triggered interrupts
+	uint32_t	ep_int =	O_EP->DOEPINT & DEV->DOEPMSK;					// get all triggered interrupts
 
 	/* transfer complete interrupt */
 	if (ep_int & USB_OTG_DOEPINT_XFRC) {
 		O_EP->DOEPINT |= USB_OTG_DOEPINT_XFRC;
-		// TODO: @1133
-		// PCD_EP_OutXfrComplete_int TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		// TODO: DMA?				[stm32h7xx_hal_pcd.c] @2206
+		// TODO: CORE VERISON?		[stm32h7xx_hal_pcd.c] @2263
+		if (!ep_num && !oep->size) { start_OEP0(handle);	}
+		// HAL_PCD_DataOutStageCallback (not needed for HID) TODO!!!!!!!!!!!!!!
 	}
 
 	/* endpoint disabled interrupt */
 	if (ep_int & USB_OTG_DOEPINT_EPDISD) {
 		if (handle->usb->GINTSTS & USB_OTG_GINTSTS_BOUTNAKEFF) {
-			device->DCTL |= USB_OTG_DCTL_CGONAK;
+			DEV->DCTL |= USB_OTG_DCTL_CGONAK;
 		}
-		// TODO: ISO? @1158
+		// TODO: ISO?				[stm32h7xx_hal_pcd.c] @1158
 		O_EP->DOEPINT |= USB_OTG_DOEPINT_EPDISD;
 	}
 
 	/* SETUP phase done */
 	if (ep_int & USB_OTG_DOEPINT_STUP) {
 		O_EP->DOEPINT |= USB_OTG_DOEPINT_STUP;
-		// TODO: @1140
-		// PCD_EP_OutSetupPacket_int TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2317
+		// HAL_PCD_SetupStageCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!
+		// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2330
 	}
 
 	/* OUT token received when endpoint disabled interrupt */
@@ -165,13 +176,14 @@ static inline void OTG_common_oep_handler(USB_handle_t* handle, uint8_t ep_num) 
 }
 
 static inline void OTG_common_handler(USB_handle_t* handle) {
-	USB->GINTSTS = USB_OTG_GINTSTS_MMIS;	// clear mode mismatch regardless (it does not have any effect)
-	if ((USB->GINTSTS) & 0b1UL) { return; }  // exit in host mode  TODO: handle host (low priority)
+	USB->GINTSTS = USB_OTG_GINTSTS_MMIS;		// clear mode mismatch regardless (it does not have any effect)
+	if ((USB->GINTSTS) & 0b1UL) { return; }		// exit in host mode  TODO: host?
 	
-	const uint16_t				frame =		(DEV->DSTS >> USB_OTG_DSTS_FNSOF_Pos) & 0x3FFFUL;
-	uint8_t						ep_num;
-	uint16_t					ep_gint;
-	USB_OEP_t*					oep;
+	const uint16_t	frame =	(DEV->DSTS >> USB_OTG_DSTS_FNSOF_Pos) & 0x3FFFUL;
+	uint8_t			ep_num;
+	uint16_t		ep_gint;
+	USB_IEP_t*		iep;
+	USB_OEP_t*		oep;
 
 
 	// TODO: verify (HAL_PCD_IRQHandler @1085-1115)
@@ -229,11 +241,34 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 	if (USB->GINTSTS & USB_OTG_GINTSTS_USBRST) {
 		DEV->DCTL &= ~USB_OTG_DCTL_RWUSIG;		// clear remote wake-up signaling TODO: needed?
 		flush_TX_FIFOS(USB);
-		// TODO: general core reset func (code used in init)
-		// TODO: @1342
 
+		for (ep_num = 0U; ep_num < USB_OTG_ENDPOINT_COUNT; ep_num++) {
+			iep = handle->IEP[ep_num]; oep = handle->OEP[ep_num];
+			I_EP->DIEPINT = O_EP->DOEPINT = 0xFB7FU;
+			I_EP->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;	// TODO: verify: datasheet says that it can only be set
+			O_EP->DOEPCTL &= ~USB_OTG_DOEPCTL_STALL;	// TODO: verify: datasheet says that it can only be set
+			O_EP->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
+		}
+		DEV->DAINTMSK |= (
+			0b1UL << 16	|	// enable OEP0 interrupts
+			0b1UL			// enable IEP0 interrupts
+		);
+		// TODO: dedicated EP1?		[stm32h7xx_hal_pcd.c] @1352
+		DEV->DOEPMSK |= (
+			USB_OTG_DOEPMSK_STUPM		|
+			USB_OTG_DOEPMSK_XFRCM		|
+			USB_OTG_DOEPMSK_EPDM		|
+			USB_OTG_DOEPMSK_OTEPSPRM	|
+			USB_OTG_DOEPMSK_NAKM
+		);
+		DEV->DIEPMSK |= (
+			USB_OTG_DIEPMSK_TOM			|
+			USB_OTG_DIEPMSK_XFRCM		|
+			USB_OTG_DIEPMSK_EPDM
+		);
 		DEV->DCFG &= ~USB_OTG_DCFG_DAD;			// reset DEV address
-		// USB_EP0_OutStart TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+		start_OEP0(handle);
 		USB->GINTSTS |= USB_OTG_GINTSTS_USBRST;
 	}
 
@@ -249,21 +284,19 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 
 	/* start of frame interrupt */
 	if (USB->GINTSTS & USB_OTG_GINTSTS_SOF) {
-		// TODO: @1406
-		// HAL_PCD_SOFCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		// HAL_PCD_SOFCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!!!!!!!!
 		USB->GINTSTS |= USB_OTG_GINTSTS_SOF;
 	}
 
 	/* global OUT NAK effective interrupt */
 	if (USB->GINTSTS & USB_OTG_GINTSTS_BOUTNAKEFF) {
 		USB->GINTMSK &= ~USB_OTG_GINTMSK_GONAKEFFM;  // mask global OUT NAK effective interrupt
-		// TODO: ISO? @1422
+		// TODO: ISO?			[stm32h7xx_hal_pcd.c] @1422
 	}
 
 	/* connection event interrupt */
 	if (USB->GINTSTS & USB_OTG_GINTSTS_SRQINT) {
-		// TODO: @1479
-		// HAL_PCD_ConnectCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		// HAL_PCD_ConnectCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!!!!
 		USB->GINTSTS |= USB_OTG_GINTSTS_SRQINT;
 	}
 
@@ -271,8 +304,7 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 	if (USB->GINTSTS & USB_OTG_GINTSTS_OTGINT) {
 		uint32_t tmp = USB->GOTGINT;
 		if (tmp & USB_OTG_GOTGINT_SEDET) {
-			// TODO: @1500
-			// HAL_PCD_DisconnectCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			// HAL_PCD_DisconnectCallback (not needed for HID) TODO!!!!!!!!!!!!
 		}
 		USB->GOTGINT |= tmp;  // restore GOTGINT
 	}
@@ -280,7 +312,7 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 	// TODO: other interrupts??
 
 	// TODO: (HAL_PCD_IRQHandler @1085-1115)
-	/* TODO: ISO?
+	/* TODO: ISO?				[stm32h7xx_hal_pcd.c]
 	/* incomplete isochronous IN interrupt * /
 	if (USB->GINTSTS & USB_OTG_GINTSTS_IISOIXFR) {
 		// TODO: @1433
@@ -291,7 +323,7 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 	}
 	*/
 
-	/* TODO: LPM?
+	/* TODO: LPM?				[stm32h7xx_hal_pcd.c]
 	/* suspend interrupt * /
 	if (USB->GINTSTS & USB_OTG_GINTSTS_USBSUSP) {
 		// TODO: @1297

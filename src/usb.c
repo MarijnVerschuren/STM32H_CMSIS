@@ -59,10 +59,6 @@ void config_USB_kernel_clock(USB_CLK_SRC_t src) {
 	}
 }
 
-// TODO: ULPI?
-/* uint16_t				dp_ulpi = dp_pin..id.sub,				dn_ulpi = dn_pin.id.sub;
-dev_id_t				ulpi = {0, 0, 0}; if (dp_ulpi == dn_ulpi) { ulpi = *((dev_id_t*)&dp_ulpi); }
-if (ulpi.clk)			{ enable_id(ulpi); } */
 void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 	/* argument and variable setup */
 	if (dp == USB_PIN_DISABLE || dn == USB_PIN_DISABLE) { return; }

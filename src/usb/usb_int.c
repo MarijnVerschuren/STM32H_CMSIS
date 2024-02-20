@@ -48,16 +48,17 @@ extern void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb);
  * static
 * */
 /*!< setup */
-// TODO: setup code will probably need its own functions
 static inline void start_OEP0(USB_handle_t* handle) {
 	USB_OEP_t	*oep =		*handle->OEP;
 	// TODO: CORE VERISON?	[stm32h7xx_ll_usb.c] @2263
-	O_EP->DOEPTSIZ = (
-		0x18UL									|	// expect 24 bytes to be received
-		(0b1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos)	|	// set bit (will be reset when packet is received)
-		(0x3UL << USB_OTG_DOEPTSIZ_STUPCNT_Pos)		// set max number of back to back packets to 3
-	);
-	// TODO: DMA?			[stm32h7xx_ll_usb.c] @2206
+	if (!(O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
+		O_EP->DOEPTSIZ = (
+			0x18UL									|	// expect 24 bytes to be received
+			(0b1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos)	|	// set bit (will be reset when packet is received)
+			(0x3UL << USB_OTG_DOEPTSIZ_STUPCNT_Pos)		// set max number of back to back packets to 3
+		);
+		// TODO: DMA?			[stm32h7xx_ll_usb.c] @1427
+	}
 }
 
 /*!< IRQ handleing */
@@ -80,6 +81,7 @@ static inline void OTG_common_iep_handler(USB_handle_t* handle, uint8_t ep_num) 
 		) {
 			iep->class->data_in(handle->usb, ep_num);
 		}
+		// USBD_LL_DataOutStage  // TODO: implement fully... also do this for IEP etc
 	}
 
 	/* endpoint disabled interrupt */
@@ -136,10 +138,22 @@ static inline void OTG_common_oep_handler(USB_handle_t* handle, uint8_t ep_num) 
 	/* transfer complete interrupt */
 	if (ep_int & USB_OTG_DOEPINT_XFRC) {
 		O_EP->DOEPINT |= USB_OTG_DOEPINT_XFRC;
-		// TODO: DMA?				[stm32h7xx_hal_pcd.c] @2206
-		// TODO: CORE VERISON?		[stm32h7xx_hal_pcd.c] @2263
-		if (!ep_num && !oep->size) { start_OEP0(handle);	}
-		// HAL_PCD_DataOutStageCallback (not needed for HID) TODO!!!!!!!!!!!!!!
+		// TODO: DMA?				[stm32h7xx_hal_pcd.c] @2217
+		// TODO: CORE VERISON?		[stm32h7xx_hal_pcd.c] @2274
+		if (!ep_num) {
+			if (!oep->size) { start_OEP0(handle); }
+			// TODO: @326 [usbd_core.c]
+			if (handle->EP0_state == EP_DATA_OUT) {
+				// TODO: CONTINUE HERE!!!!!!!!!!!!!!!!!!!!!!!<<<<<<<<<<<<<<<<<<<<<<<<<
+				if (oep->size > oep->packet_size) {
+
+				}
+				else {
+
+				}
+			}
+		}
+		// TODO: @326 [usbd_core.c]
 	}
 
 	/* endpoint disabled interrupt */
@@ -176,10 +190,15 @@ static inline void OTG_common_oep_handler(USB_handle_t* handle, uint8_t ep_num) 
 }
 
 static inline void OTG_common_handler(USB_handle_t* handle) {
-	USB->GINTSTS = USB_OTG_GINTSTS_MMIS;		// clear mode mismatch regardless (it does not have any effect)
 	if ((USB->GINTSTS) & 0b1UL) { return; }		// exit in host mode  TODO: host?
-	
-	const uint16_t	frame =	(DEV->DSTS >> USB_OTG_DSTS_FNSOF_Pos) & 0x3FFFUL;
+
+	/* clear unneeded interrupts */
+	USB->GINTSTS = USB_OTG_GINTSTS_MMIS;		// clear mode mismatch (it does not have any effect)
+
+	const uint32_t	irqs = USB->GINTSTS & USB->GINTMSK;
+	if (!irqs) { return; }  // TODO why was this interrupt triggered if no unmasked interrupts are triggered??? NEEDED??
+
+	//const uint16_t	frame =	(DEV->DSTS >> USB_OTG_DSTS_FNSOF_Pos) & 0x3FFFUL;
 	uint8_t			ep_num;
 	uint16_t		ep_gint;
 	USB_IEP_t*		iep;
@@ -187,8 +206,9 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 
 
 	// TODO: verify (HAL_PCD_IRQHandler @1085-1115)
+
 	/* receive packet interrupt */
-	if (USB->GINTSTS & USB_OTG_GINTSTS_RXFLVL) {
+	if (irqs & USB_OTG_GINTSTS_RXFLVL) {
 		USB->GINTMSK &= ~USB_OTG_GINTMSK_RXFLVLM_Msk;	// note that RXFLVL is masked instead of cleared since that is not possible
 		const GRXSTSR_t			RX_status; *((uint32_t*)&RX_status) = USB->GRXSTSR;
 		volatile uint32_t*		FIFO = (void*)(((uint32_t)USB) + USB_OTG_FIFO_BASE);
@@ -206,15 +226,17 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 					oep->buffer++; oep->buffer++;
 				} oep->count += ((uint32_t)oep->buffer) - buffer;
 				break;
+
 			case 0b0110U:  // SETUP data packet
 				// TODO: seperate SETUP data array needed??????
 				__UNALIGNED_UINT32_WRITE(handle->setup, *FIFO);
 				__UNALIGNED_UINT32_WRITE(&handle->setup[1], *FIFO);
-				oep->count += 8UL;
+				oep->count += 8UL;  // TODO: is BCNT also 8???
 				break;
+
 			// TODO: other cases ????
 		}
-		USB->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM_Msk;	// unmask the interrupt
+		USB->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM_Msk;	// unmask interrupt
 	}
 
 	/* IN endpoints interrupt */
@@ -266,7 +288,7 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 			USB_OTG_DIEPMSK_XFRCM		|
 			USB_OTG_DIEPMSK_EPDM
 		);
-		DEV->DCFG &= ~USB_OTG_DCFG_DAD;			// reset DEV address
+		DEV->DCFG &= ~USB_OTG_DCFG_DAD;				// reset DEV address
 
 		start_OEP0(handle);
 		USB->GINTSTS |= USB_OTG_GINTSTS_USBRST;
@@ -274,11 +296,23 @@ static inline void OTG_common_handler(USB_handle_t* handle) {
 
 	/* enumeration done interrupt */
 	if (USB->GINTSTS & USB_OTG_GINTSTS_ENUMDNE) {
-		// TODO: @1386
-		// USB_ActivateSetup TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// hpcd->Init.speed = USB_GetDevSpeed(hpcd->Instance);
-		// USB_SetTurnaroundTime TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// HAL_PCD_ResetCallback TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		iep = handle->IEP[0];
+
+		I_EP->DIEPCTL &= ~USB_OTG_DIEPCTL_MPSIZ;	// reset IEP0 maximum packet size
+		DEV->DCTL |= USB_OTG_DCTL_CGINAK;			// clear global IN NAK
+		// TODO: HS?				[stm32h7xx_ll_usb.c] @205
+		USB->GUSBCFG &= ~USB_OTG_GUSBCFG_TRDT;  // reset turnaround time
+		if		(AHB_clock_frequency < 15000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 16000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 17200000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 18500000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 20000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 21800000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 24000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 27700000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else if	(AHB_clock_frequency < 32000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		else										{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
+		// HAL_PCD_ResetCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!!!!!!
 		USB->GINTSTS |= USB_OTG_GINTSTS_ENUMDNE;
 	}
 

@@ -183,7 +183,8 @@ void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn) {
 
 
 void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb) {  // TODO: args
-	USB_handle_t *handle = USB_handle[((uint32_t)usb >> 0x13UL) & 0b1UL];
+	USB_handle_t			*handle = USB_handle[((uint32_t)usb >> 0x13UL) & 0b1UL];
+	USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
 	if (!handle) {  // create status if not available
 		USB_handle[((uint32_t)usb >> 0x13UL) & 0b1UL] =\
 		handle = malloc(sizeof(USB_handle_t));

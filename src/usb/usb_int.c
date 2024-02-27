@@ -9,6 +9,8 @@
 /*!<
  * defines
 * */
+// all code in this file is essentially forced into two functions: OTG_HS_IRQHandler and OTG_FS_IRQHandler
+// TODO: consider compiling everything into USB_common_handler to reduce program size!!!
 #define inline __attribute__((always_inline))
 
 #define USB (handle->usb)
@@ -19,7 +21,7 @@
 
 /*!<
  * register types
- * */
+* */
 typedef struct {
 	uint32_t EPNUM		: 4;	// endpoint number
 	uint32_t BCNT		: 10;	// byte count
@@ -30,7 +32,6 @@ typedef struct {
 	uint32_t STSPHST	: 1;	// status phase start
 	uint32_t _1			: 4;	// reserved 1
 } GRXSTSR_t;
-
 
 /*!<
  * variables
@@ -50,6 +51,12 @@ extern void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb);
  * static
 * */
 /*!< setup */
+static inline void /* TODO: used in init! */ open_IEP() {
+	// TODO: HAL_PCD_EP_Open @1771 [stm32h7xx_hal_pcd.c]
+}
+static inline void /* TODO: used in init! */ open_OEP() {
+	// TODO: HAL_PCD_EP_Open @1771 [stm32h7xx_hal_pcd.c]
+}
 static inline void start_OEP0(USB_handle_t* handle, USB_OEP_t* oep) {
 	// TODO: CORE VERISON?	[stm32h7xx_ll_usb.c] @2263
 	if (!(O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
@@ -61,20 +68,343 @@ static inline void start_OEP0(USB_handle_t* handle, USB_OEP_t* oep) {
 		// TODO: DMA?			[stm32h7xx_ll_usb.c] @1427
 	}
 }
+static inline void stall_IEP(USB_handle_t* handle, uint8_t ep_num) {
+	USB_IEP_t* iep = handle->IEP[ep_num];
+	iep->stall = 0b1U;
+	if (ep_num && !(I_EP->DIEPCTL & USB_OTG_DIEPCTL_EPENA)) {
+		I_EP->DIEPCTL &= ~(USB_OTG_DIEPCTL_EPDIS);		// TODO: EPDIS is rs (no effect????)
+	}
+    I_EP->DIEPCTL |= USB_OTG_DIEPCTL_STALL;
+}
+static inline void stall_OEP(USB_handle_t* handle, uint8_t ep_num) {
+	USB_OEP_t* oep = handle->OEP[ep_num];
+	oep->stall = 0b1U;
+	if (ep_num && !(O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
+		O_EP->DOEPCTL &= ~(USB_OTG_DOEPCTL_EPDIS);		// TODO: EPDIS is rs (no effect????)
+	}
+	O_EP->DOEPCTL |= USB_OTG_DOEPCTL_STALL;
+	start_OEP0(handle, oep);
+}
+static inline void stall_EP(USB_handle_t* handle, uint8_t ep_num) {
+	stall_IEP(handle, ep_num); stall_OEP(handle, ep_num);
+}
+static inline void unstall_IEP(USB_handle_t* handle, uint8_t ep_num) {
+	USB_IEP_t* iep = handle->IEP[ep_num];
+	iep->stall = 0b0U;
+	I_EP->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;
+	if (iep->type & 0b10U) {  // BULK or INTERRUPT
+		I_EP->DIEPCTL |= USB_OTG_DIEPCTL_SD0PID_SEVNFRM;	// set DATA0
+	}
+}
+static inline void unstall_OEP(USB_handle_t* handle, uint8_t ep_num) {
+	USB_OEP_t* oep = handle->OEP[ep_num];
+	oep->stall = 0b0U;
+	O_EP->DOEPCTL &= ~USB_OTG_DOEPCTL_STALL;
+	if (oep->type & 0b10U) {  // BULK or INTERRUPT
+		O_EP->DOEPCTL |= USB_OTG_DOEPCTL_SD0PID_SEVNFRM;	// set DATA0
+	}
+}
+
+static inline void IN_transfer(USB_handle_t* handle, uint8_t ep_num, void* buffer, uint32_t size) {
+	USB_IEP_t* iep = handle->IEP[ep_num];
+	iep->src = buffer;
+	iep->size = size;
+	iep->count = 0U;
+	// TODO: DMA? [stm32h7xx_hal_pcd.c] @1908
+
+	I_EP->DIEPTSIZ &= ~USB_OTG_DIEPTSIZ_PKTCNT;
+	I_EP->DIEPTSIZ &= ~USB_OTG_DIEPTSIZ_XFRSIZ;
+
+	if (ep_num) {
+		if (!size) {
+			I_EP->DIEPTSIZ |= (1UL << USB_OTG_DIEPTSIZ_PKTCNT_Pos);
+		} else {
+			I_EP->DIEPTSIZ |= (
+				((iep->size + iep->packet_size - 1U) / iep->packet_size) << USB_OTG_DIEPTSIZ_PKTCNT_Pos
+				& USB_OTG_DIEPTSIZ_PKTCNT
+			);
+			I_EP->DIEPTSIZ |= (USB_OTG_DIEPTSIZ_XFRSIZ & iep->size);
+			// TODO: ISO? [stm32h7xx_ll_usb.c] @776
+		}
+		// TODO: DMA? [stm32h7xx_ll_usb.c] @783
+		// TODO: ISO? [stm32h7xx_ll_usb.c] @810
+
+		// TODO: (void)USB_EPStartXfer(hpcd->Instance, ep, (uint8_t)hpcd->Init.dma_enable);
+	} else {
+		I_EP->DIEPTSIZ |= (1UL << USB_OTG_DIEPTSIZ_PKTCNT_Pos);
+		if (size > iep->packet_size) { iep->size = iep->packet_size; }  // always one packet TODO: valid?
+		I_EP->DIEPTSIZ |= (iep->size & USB_OTG_DIEPTSIZ_XFRSIZ);
+		// TODO: DMA? [stm32h7xx_ll_usb.c] @925
+	}
+
+	I_EP->DIEPCTL |= (USB_OTG_DIEPCTL_CNAK | USB_OTG_DIEPCTL_EPENA);	// enable EP
+	if (size) { DEV->DIEPEMPMSK |= 0b1UL << ep_num; }					// unmask TX FIFO empty interrupt
+}
+
+static inline void get_device_descriptor(USB_handle_t* handle, setup_header_t* req) {
+	uint8_t* ptr = NULL;
+
+	switch (req->value >> 8) {
+	// TODO: LPM / BOS?
+	case USB_DEVICE_DESCRIPTOR:
+		ptr = handle->descriptor; break;
+	case USB_CONFIGURATION_DESCRIPTOR:
+		handle->EP0_state = EP_DATA_IN;				// control data IN
+		IN_transfer(handle, 0, handle->class->descriptor, handle->class->descriptor_size);
+		break;
+	case USB_STRING_DESCRIPTOR:
+		switch (req->value & 0xFFU) {
+		case USB_LANG_ID_STRING_DESCRIPTOR:
+			ptr = handle->lang_ID_string; break;
+		case USB_MANUFACTURER_STRING_DESCRIPTOR:
+			ptr = handle->manufacturer_string; break;
+		case USB_PRODUCT_STRING_DESCRIPTOR:
+			ptr = handle->product_string; break;
+		case USB_SERIAL_STRING_DESCRIPTOR:
+			ptr = handle->serial_string; break;
+		case USB_CONFIG_STRING_DESCRIPTOR:
+			ptr = handle->configuration_string; break;
+		case USB_INTERFACE_STRING_DESCRIPTOR:
+			ptr = handle->interface_string; break;
+		default:  // TODO: USER STR? @494 [usbd_ctlreq.c]
+			stall_EP(handle, 0);			// error
+			return;
+		} break;
+	case USB_QUALIFIER_DESCRIPTOR:		// TODO: HS?
+	case USB_OTHER_SPEED_DESCRIPTOR:	// TODO: HS?
+	default:
+		stall_EP(handle, 0);					// error
+		return;
+	}
+	if (!req->length) {
+		handle->EP0_state = EP_STATUS_IN;				// control status IN
+		IN_transfer(handle, 0, NULL, 0U);
+		return;
+	}
+	if (!ptr) { stall_EP(handle, 0); return; }	// error
+	handle->EP0_state = EP_DATA_IN;						// control data IN
+	IN_transfer(handle, 0, ptr, *ptr);
+}
+static inline void device_setup_request(USB_handle_t* handle) {
+	setup_header_t* req = &handle->request;
+	switch (req->type) {
+	case STANDARD_REQUEST:
+		switch (req->command) {
+		case GET_STATUS:
+			if (
+				req->length != 2U ||
+				handle->state > USB_CONFIGURED
+			) { break; }										// error
+			handle->EP0_state = EP_DATA_IN;						// control data IN
+			IN_transfer(handle, 0, &handle->device_config, 2U);
+			return;
+		case CLEAR_FEATURE:
+			if (handle->state > USB_CONFIGURED) { break; }		// error
+			if (req->value != DEVICE_FEATURE_WAKE_HOST) { return; }
+			handle->device_config &= ~DEVICE_CONFIG_WAKE_HOST;
+			handle->EP0_state = EP_STATUS_IN;					// control status IN
+			IN_transfer(handle, 0, NULL, 0U);
+			return;
+		case SET_FEATURE:
+			if (req->value != DEVICE_FEATURE_WAKE_HOST) { return; }
+			handle->device_config |= DEVICE_CONFIG_WAKE_HOST;
+			handle->EP0_state = EP_STATUS_IN;					// control status IN
+			IN_transfer(handle, 0, NULL, 0U);
+			return;
+		case SET_ADDRESS:
+			if (
+				req->value || req->length || (req->value >= 128U) ||
+				handle->state == USB_CONFIGURED
+			) { break; }	// error
+			handle->address = req->value;
+
+			DEV->DCFG &= ~(USB_OTG_DCFG_DAD);					// update device address
+			DEV->DCFG |= req->value << USB_OTG_DCFG_DAD_Pos;
+
+			handle->EP0_state = EP_STATUS_IN;					// control status IN
+			IN_transfer(handle, 0, NULL, 0U);
+
+			if (req->value) { handle->state = USB_ADDRESSED; }
+			else			{ handle->state = USB_DEFAULT; }
+			return;
+		case GET_DESCRIPTOR:
+			get_device_descriptor(handle, req);
+			return;
+		case SET_DESCRIPTOR: break;								// TODO: NOT IMPLEMENTD???????????
+		case GET_CONFIGURATION:
+			if (req->length != 0x1U) { break; }					// error
+			switch (handle->state) {
+			case USB_DEFAULT:
+			case USB_ADDRESSED:
+				handle->EP0_state = EP_DATA_IN;					// control data IN
+				IN_transfer(handle, 0, "\0", 1U);	// send 0x00
+				return;
+			case USB_CONFIGURED:
+				handle->EP0_state = EP_DATA_IN;					// control data IN
+				IN_transfer(handle, 0, &handle->device_config, 1U);
+				return;
+			default: break;
+			} break;
+		case SET_CONFIGURATION:
+			uint8_t index = req->value & 0xFFU;
+			if (index > USB_OTG_MAX_CONFIG_COUNT) { break; }	// error
+			switch (handle->state) {
+			case USB_ADDRESSED:
+				if (index) {
+					handle->class_init = 0b1U;
+					handle->class->init(handle);				// TODO: errors?
+					handle->state = USB_CONFIGURED;
+				}
+				handle->EP0_state = EP_STATUS_IN;				// control status IN
+				IN_transfer(handle, 0, NULL, 0U);
+				return;
+			case USB_CONFIGURED:
+				if (!index) {
+					handle->class_init = 0b0U;
+					handle->state = USB_ADDRESSED;
+					handle->class->de_init(handle);				// TODO: errors?
+				}
+				handle->EP0_state = EP_STATUS_IN;				// control status IN
+				IN_transfer(handle, 0, NULL, 0U);
+				return;  // TODO: multi config??
+			default: break;
+			} break;
+		default: break;
+		} break;
+	case CLASS_REQUEST:
+	case VENDOR_REQUEST:
+		handle->class->setup(handle);		// TODO: errors?
+		return;
+	default: break;
+	}
+
+	// catch all errors
+	stall_EP(handle, 0);
+}
+static inline void interface_setup_request(USB_handle_t* handle) {
+	setup_header_t* req = &handle->request;
+	switch (req->type) {
+	case STANDARD_REQUEST:
+	case CLASS_REQUEST:
+	case VENDOR_REQUEST:
+		switch (handle->state) {
+		case USB_DEFAULT:
+		case USB_ADDRESSED:
+		case USB_CONFIGURED:
+			if ((req->index & 0xFFU) > USB_OTG_MAX_INTERFACE_COUNT) { break; }  // error
+			handle->class->setup(handle);  // TODO: errors??
+			if (req->length) { return; }
+			handle->EP0_state = EP_STATUS_IN;					// control status IN
+			IN_transfer(handle, 0, NULL, 0U);
+			return;
+		default: break;
+		} break;
+	default: break;
+	}
+
+	// catch all errors
+	stall_EP(handle, 0);
+}
+static inline void endpoint_setup_request(USB_handle_t* handle) {
+	setup_header_t* req = &handle->request;
+	uint8_t ep_num = req->index & 0x7FU;
+	uint8_t in = (req->index & 0x80U) == 0x80U;
+	uint16_t status = 0x0000U;
+
+	switch (req->type) {
+	case STANDARD_REQUEST:
+		switch (req->command) {
+		case GET_STATUS:							// TODO: validate @298 [usbd_ctlreq.c]
+			switch (handle->state) {
+			case USB_ADDRESSED:
+				if (ep_num)	{ break; }				// error
+				handle->EP0_state = EP_DATA_IN;
+				IN_transfer(handle, 0, &status, 2U);
+				return;
+			case USB_CONFIGURED:
+				if (in) {
+					USB_IEP_t* iep = handle->IEP[ep_num];
+					if (!iep->used) { break; }		// error
+					if (ep_num) { status |= iep->stall; }
+				} else {
+					USB_OEP_t* oep = handle->OEP[ep_num];
+					if (!oep->used) { break; }		// error
+					if (ep_num) { status |= oep->stall; }
+				}
+				handle->EP0_state = EP_DATA_IN;
+				IN_transfer(handle, 0, &status, 2U);
+				return;
+			default: break;
+			} break;
+		case CLEAR_FEATURE:							// TODO: validate @264 [usbd_ctlreq.c]
+			switch (handle->state) {
+			case USB_ADDRESSED:						// TODO: same as SET_FEATURE, USB_ADDRESSED valid????
+				if (!ep_num)	{ break; }			// error
+				if (in)			{ stall_IEP(handle, ep_num); }
+				else			{ stall_OEP(handle, ep_num); }
+				stall_IEP(handle, 0);		// TODO: why stall IEP0??
+				return;
+			case USB_CONFIGURED:
+				if (req->value) { return; }
+				if (ep_num) {						// value == 0 -> clear: FEATURE_EP_HALT
+					if (in)	{ unstall_IEP(handle, ep_num); }
+					else	{ unstall_OEP(handle, ep_num); }
+				}
+				handle->EP0_state = EP_STATUS_IN;	// control status IN
+				IN_transfer(handle, 0, NULL, 0U);
+				handle->class->setup(handle);		// TODO: errors??
+				return;
+			default: break;
+			} break;
+		case SET_FEATURE:							// TODO: validate @231 [usbd_ctlreq.c]
+			switch (handle->state) {
+			case USB_ADDRESSED:						// TODO: same as CLEAR_FEATURE, USB_ADDRESSED valid????
+				if (!ep_num)	{ break; }			// error
+				if (in)			{ stall_IEP(handle, ep_num); }
+				else			{ stall_OEP(handle, ep_num); }
+				stall_IEP(handle, 0);		// TODO: why stall IEP0??
+				return;
+			case USB_CONFIGURED:
+				if (req->value) { return; }
+				if (ep_num && !req->length) {		// value == 0 -> set: FEATURE_EP_HALT
+					if (in)	{ stall_IEP(handle, ep_num); }
+					else	{ stall_OEP(handle, ep_num); }
+				}
+				handle->EP0_state = EP_STATUS_IN;	// control status IN
+				IN_transfer(handle, 0, NULL, 0U);
+				return;
+			default: break;
+			} break;
+		default: break;
+		} break;
+	case CLASS_REQUEST:
+	case VENDOR_REQUEST:
+		handle->class->setup(handle);				// TODO: errors??
+		return;
+	default: break;
+	}
+
+	// catch all errors
+	stall_EP(handle, 0);
+}
 
 /*!< usb IRQ logic */
-static inline void USB_OTG_IRQ(USB_handle_t* handle) {
+static inline void /**/ USB_OTG_IRQ(USB_handle_t* handle) {
 	uint32_t tmp = USB->GOTGINT;
 	if (tmp & USB_OTG_GOTGINT_SEDET) {
-		// HAL_PCD_DisconnectCallback (not needed for HID) TODO!!!!!!!!!!!!
+		handle->state = USB_DEFAULT;
+		handle->class->de_init(handle);
 	}
 	USB->GOTGINT |= tmp;  // restore GOTGINT
 }
-static inline void USB_SOF_IRQ(USB_handle_t* handle) {
-	// HAL_PCD_SOFCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!!!!!!!!
+static inline void /**/ USB_SOF_IRQ(USB_handle_t* handle) {
 	USB->GINTSTS = USB_OTG_GINTSTS_SOF;
+	if (
+		handle->state == USB_CONFIGURED &&
+		handle->class->SOF
+	) { handle->class->SOF(handle); }
 }
-static inline void USB_receive_packet_IRQ(USB_handle_t* handle) {
+static inline void /**/ USB_receive_packet_IRQ(USB_handle_t* handle) {
 	USB_OEP_t*		oep;
 
 	USB->GINTMSK &= ~USB_OTG_GINTMSK_RXFLVLM_Msk;	// note that RXFLVL is masked instead of cleared since that is not possible
@@ -83,30 +413,35 @@ static inline void USB_receive_packet_IRQ(USB_handle_t* handle) {
 	oep = handle->OEP[RX_status.EPNUM];
 
 	switch (RX_status.PKTSTS) {
-		case 0b0010U:  // OUT data packet
-			if (!RX_status.BCNT) { break; }
-		const uint32_t	words = ((RX_status.BCNT + 3U) >> 2U);  // + 3UL to yield round up
-		uint32_t		buffer = (uint32_t)oep->buffer;
+	case 0b0010U:  // OUT data packet
+		if (!RX_status.BCNT) { break; }
+		const uint32_t	words = RX_status.BCNT >> 2U;
+		const uint8_t	bytes = RX_status.BCNT & 0b11UL;
+		uint32_t		buffer = (uint32_t)oep->dest;
 		for (uint32_t i = 0UL; i < words; i++) {
-			__UNALIGNED_UINT32_WRITE(oep->buffer, *FIFO);
-			// 4x inc is faster than an add due to pipelining
-			oep->buffer++; oep->buffer++;
-			oep->buffer++; oep->buffer++;
-		} oep->count += ((uint32_t)oep->buffer) - buffer;
+			__UNALIGNED_UINT32_WRITE(oep->dest, *FIFO);
+			// 4x inc is faster than an iadd due to pipelining
+			oep->dest++; oep->dest++;
+			oep->dest++; oep->dest++;
+		} if (bytes) {
+			uint32_t tmp; __UNALIGNED_UINT32_WRITE(&tmp, *FIFO);
+			for (uint8_t i = 0; i < bytes; i++) {
+				*(uint8_t*)oep->dest++ = (uint8_t)(tmp >> (8U * i));
+			}
+		} oep->count += ((uint32_t)oep->dest) - buffer;
 		break;
 
-		case 0b0110U:  // SETUP data packet
-			// TODO: seperate SETUP data array needed??????
-				__UNALIGNED_UINT32_WRITE(handle->setup, *FIFO);
+	case 0b0110U:  // SETUP data packet
+		__UNALIGNED_UINT32_WRITE(&handle->setup[0], *FIFO);
 		__UNALIGNED_UINT32_WRITE(&handle->setup[1], *FIFO);
 		oep->count += 8UL;  // TODO: is BCNT also 8???
 		break;
 
-		default: break;  // TODO: other cases ????
+	default: break;  // TODO: other cases ????
 	}
 	USB->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM_Msk;	// unmask interrupt
 }
-static inline void USB_reset_IRQ(USB_handle_t* handle) {
+static inline void /**/ USB_reset_IRQ(USB_handle_t* handle) {
 	uint8_t			ep_num;
 	USB_IEP_t*		iep;
 	USB_OEP_t*		oep;
@@ -143,27 +478,43 @@ static inline void USB_reset_IRQ(USB_handle_t* handle) {
 	start_OEP0(handle, *handle->OEP);
 	USB->GINTSTS = USB_OTG_GINTSTS_USBRST;
 }
-static inline void USB_enumeration_done_IRQ(USB_handle_t* handle, USB_IEP_t* iep) {
+static inline void /*TODO*/ USB_enumeration_done_IRQ(USB_handle_t* handle, USB_IEP_t* iep) {
 	I_EP->DIEPCTL &= ~USB_OTG_DIEPCTL_MPSIZ;	// reset IEP0 maximum packet size
 	DEV->DCTL |= USB_OTG_DCTL_CGINAK;			// clear global IN NAK
 	// TODO: HS?				[stm32h7xx_ll_usb.c] @205
 	USB->GUSBCFG &= ~USB_OTG_GUSBCFG_TRDT;  // reset turnaround time
 	if		(AHB_clock_frequency < 15000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 16000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 17200000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 18500000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 20000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 21800000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 24000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 27700000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else if	(AHB_clock_frequency < 32000000UL)	{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	else										{ USB->GUSBCFG |= 0xFU << USB_OTG_GUSBCFG_TRDT_Pos; }
-	// HAL_PCD_ResetCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!!!!!!
+	else if	(AHB_clock_frequency < 16000000UL)	{ USB->GUSBCFG |= 0xEU << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 17200000UL)	{ USB->GUSBCFG |= 0xDU << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 18500000UL)	{ USB->GUSBCFG |= 0xCU << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 20000000UL)	{ USB->GUSBCFG |= 0xBU << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 21800000UL)	{ USB->GUSBCFG |= 0xAU << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 24000000UL)	{ USB->GUSBCFG |= 0x9U << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 27700000UL)	{ USB->GUSBCFG |= 0x8U << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else if	(AHB_clock_frequency < 32000000UL)	{ USB->GUSBCFG |= 0x7U << USB_OTG_GUSBCFG_TRDT_Pos; }
+	else										{ USB->GUSBCFG |= 0x6U << USB_OTG_GUSBCFG_TRDT_Pos; }
+	// TODO: HS? (see: HAL_PCD_ResetCallback)
+	handle->state = USB_DEFAULT;
+	handle->EP0_state = EP_IDLE;
+	handle->device_config = 0x0000U;
+	handle->class->de_init(handle);
+
+	/* TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	/* Open EP0 OUT *
+	(void)USBD_LL_OpenEP(pdev, 0x00U, USBD_EP_TYPE_CTRL, USB_MAX_EP0_SIZE);
+	pdev->ep_out[0x00U & 0xFU].is_used = 1U;
+
+	pdev->ep_out[0].maxpacket = USB_MAX_EP0_SIZE;
+
+	/* Open EP0 IN *
+	(void)USBD_LL_OpenEP(pdev, 0x80U, USBD_EP_TYPE_CTRL, USB_MAX_EP0_SIZE);
+	pdev->ep_in[0x80U & 0xFU].is_used = 1U;
+
+	pdev->ep_in[0].maxpacket = USB_MAX_EP0_SIZE;
+	*/
+	// TODO: implement Open_EP
+
 	USB->GINTSTS = USB_OTG_GINTSTS_ENUMDNE;
-}
-static inline void USB_connection_IRQ(USB_handle_t* handle) {
-	// HAL_PCD_ConnectCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!!!!
-	USB->GINTSTS = USB_OTG_GINTSTS_SRQINT;
 }
 
 /*!< IEP IRQ logic */
@@ -171,11 +522,12 @@ static inline void IEP_transfer_complete_IRQ(USB_handle_t* handle, USB_IEP_t* ie
 	DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);	// mask interrupt
 	I_EP->DIEPINT |= USB_OTG_DIEPINT_XFRC;
 	// TODO: DMA?				[stm32h7xx_hal_pcd.c] @1209
+	()
 	if (
-		ep_num && iep->class->data_in &&		// make sure the class has a data_in function
+		ep_num && handle->class->data_in &&		// make sure the class has a data_in function
 		handle->state == USB_CONFIGURED		// make sure the device is configured
 	) {
-		iep->class->data_in(handle->usb, ep_num);
+		handle->class->data_in(handle->usb, ep_num);
 	}
 	// USBD_LL_DataOutStage  // TODO: implement fully... also do this for IEP etc
 }
@@ -196,18 +548,18 @@ static inline void IEP_NAK_effective_IRQ(USB_IEP_t* iep) {
 static inline void IEP_FIFO_empty_IRQ(USB_handle_t* handle, USB_IEP_t* iep, uint8_t ep_num) {
 	if (iep->count <= iep->size) {
 		uint32_t	len, len32, i;
-		uint32_t	buffer = (uint32_t)iep->buffer;
+		uint32_t	buffer = (uint32_t)iep->src;
 		uint8_t		*src, *FIFO = (uint8_t*)((uint32_t)USB + (0x1000UL * (ep_num + 1U)));
 		while (iep->size && iep->count < iep->size) {
 			len =	iep->size - iep->count;
 			len32 =	((len > iep->packet_size ? iep->packet_size : len) + 3U) >> 2U;
 			if ((I_EP->DTXFSTS & 0xFFFFUL) < len32) { break; }
-			src =	iep->buffer;
+			src =	iep->src;
 			for (i = 0UL; i < len32; i++) {
 				*FIFO = __UNALIGNED_UINT32_READ(src);
 				src++; src++; src++; src++;  // 4x inc is faster than an add due to pipelining
-			} iep->buffer +=	len;
-		} iep->count +=			((uint32_t)iep->buffer) - buffer;
+			} iep->src +=	len;
+		} iep->count +=			((uint32_t)iep->src) - buffer;
 		if (iep->size <= iep->count) {
 			// mask TX FIFO empty interrupt after all data is sent
 			DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);
@@ -224,12 +576,13 @@ static inline void OEP_transfer_complete(USB_handle_t* handle, USB_OEP_t* oep, u
 		if (!oep->size) { start_OEP0(handle, oep); }
 		// TODO: @326 [usbd_core.c]
 		if (handle->EP0_state == EP_DATA_OUT) {
-			// TODO: CONTINUE HERE!!!!!!!!!!!!!!!!!!!!!!!<<<<<<<<<<<<<<<<<<<<<<<<<
-			if (oep->size > oep->packet_size) {
-
-			}
-			else {
-
+			()
+			// TODO: CONTINUE HERE!!!!!!!!!!!!!!!!!!!!!!!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+			uint32_t len = oep->size - oep->count;
+			if (len > oep->packet_size) {
+				//oep->count += oep->packet_size;			// tmp!!
+				// TODO: (void)USBD_CtlContinueSendData(pdev, pdata, oep->size - oep->count);
+				// TODO: (void)USBD_LL_PrepareReceive(pdev, 0U, NULL, 0U);
 			}
 		}
 	}
@@ -242,20 +595,29 @@ static inline void OEP_disabled(USB_handle_t* handle, USB_OEP_t* oep) {
 	// TODO: ISO?				[stm32h7xx_hal_pcd.c] @1158
 	O_EP->DOEPINT |= USB_OTG_DOEPINT_EPDISD;
 }
-static inline void OEP_setup_done(USB_OEP_t* oep) {
+static inline void OEP_setup_done(USB_handle_t* handle, USB_OEP_t* oep) {
 	O_EP->DOEPINT |= USB_OTG_DOEPINT_STUP;
-	// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2317
-	// HAL_PCD_SetupStageCallback (not needed for HID) TODO!!!!!!!!!!!!!!!!
-	// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2330
-}
-static inline void OEP_OTEPDIS(USB_OEP_t* oep) {
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_OTEPDIS;
-}
-static inline void OEP_OTEPSPR(USB_OEP_t* oep) {
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_OTEPSPR;
-}
-static inline void OEP_NAK(USB_OEP_t* oep) {
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_NAK;
+	// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2328
+	uint8_t* header = handle->setup;
+	setup_header_t* req = &handle->request;
+
+	*(uint8_t*)req =	*header++;  // request_type
+	req->command =		*header++;
+	req->value =		(*header++ << 8U) | *header++;
+	req->index =		(*header++ << 8U) | *header++;
+	req->length =		(*header++ << 8U) | *header;
+
+	handle->EP0_state = EP_SETUP;
+	switch (req->recipiant) {
+	case RECIPIANT_DEVICE:		device_setup_request(handle);		break;
+	case RECIPIANT_INTERFACE:	interface_setup_request(handle);	break;
+	case RECIPIANT_ENDPOINT:	endpoint_setup_request(handle);		break;
+	default:
+		if (req->direction)	{ stall_IEP(handle, 0); }
+		else				{ stall_OEP(handle, 0); }
+		break;
+	}
+	// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2341
 }
 
 /*!< IRQ handleing */
@@ -304,11 +666,11 @@ static inline void OEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	/* AHB error interrupt */							// TODO: DMA?
 	O_EP->DOEPINT = USB_OTG_DOEPINT_AHBERR;				// clear AHB error interrupt
 	/* SETUP phase done */
-	if (ep_int & USB_OTG_DOEPINT_STUP)					{ OEP_setup_done(oep); }
+	if (ep_int & USB_OTG_DOEPINT_STUP)					{ OEP_setup_done(handle, oep); }
 	/* OUT token received when endpoint disabled interrupt */
-	if (ep_int & USB_OTG_DOEPINT_OTEPDIS)				{ OEP_OTEPDIS(oep); }
+	O_EP->DOEPINT |= USB_OTG_DOEPINT_OTEPDIS;			// clear OUT token received when endpoint disabled interrupt
 	/* status phase received for control write */
-	if (ep_int & USB_OTG_DOEPINT_OTEPSPR)				{ OEP_OTEPSPR(oep); }
+	O_EP->DOEPINT |= USB_OTG_DOEPINT_OTEPSPR;			// clear status phase received for control write
 	/* back to back setup packet recived interrupt */
 	O_EP->DOEPINT = USB_OTG_DOEPINT_B2BSTUP;			// clear back to back setup packet received interrupt
 	/* OUT packet error interrupt */
@@ -318,13 +680,13 @@ static inline void OEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	/* babble error interrupt */
 	O_EP->DOEPINT = USB_OTG_DOEPINT_BERR;				// clear babble error interrupt
 	/* NAK interrupt */
-	if (ep_int & USB_OTG_DOEPINT_NAK)					{ OEP_NAK(oep); }
+	O_EP->DOEPINT |= USB_OTG_DOEPINT_NAK;				// clear NAK interrupt
 	/* NYET interrupt */								// TODO: HS?
 	O_EP->DOEPINT = USB_OTG_DOEPINT_NYET;				// clear NYET interrupt
 	/* setup packet received interrupt */				// TODO: DMA?
 	O_EP->DOEPINT = USB_OTG_DOEPINT_STPKTRX;			// clear setup packet received interrupt
 }
-static inline void USB_common_handler(USB_handle_t* handle) {
+static /*  */ void USB_common_handler(USB_handle_t* handle) {
 	const uint32_t	irqs = USB->GINTSTS & USB->GINTMSK;
 	if (!irqs) {  // TODO why was this interrupt triggered if no unmasked interrupts are triggered??? NEEDED??
 		USB->GINTSTS = USB->GINTSTS;  // clear the masked interrupts
@@ -390,7 +752,7 @@ static inline void USB_common_handler(USB_handle_t* handle) {
 	/* connector ID status change interrupt */
 	USB->GINTSTS = USB_OTG_GINTSTS_CIDSCHG;				// clear connector ID status change interrupt
 	/* connection event interrupt */
-	if (irqs & USB_OTG_GINTSTS_SRQINT)					{ USB_connection_IRQ(handle); }
+	USB->GINTSTS = USB_OTG_GINTSTS_SRQINT;				// clear connection event interrupt TODO: create flag?
 	/* wake-up interrupt */								// TODO: LPM?
 	USB->GINTSTS = USB_OTG_GINTSTS_WKUINT;				// clear wake-up interrupt
 }
@@ -402,7 +764,7 @@ static inline void USB_common_handler(USB_handle_t* handle) {
 extern void OTG_HS_IRQHandler(void) { USB_common_handler(USB_handle[0]); }
 extern void OTG_FS_IRQHandler(void) { USB_common_handler(USB_handle[1]); }
 
-
+// TODO: ep0_data_len????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 //const uint16_t	frame =	(DEV->DSTS >> USB_OTG_DSTS_FNSOF_Pos) & 0x3FFFUL;
 

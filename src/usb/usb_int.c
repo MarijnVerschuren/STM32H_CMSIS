@@ -54,7 +54,7 @@ extern void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb);
 static inline void /* TODO: used in init! */ open_IEP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
 	// TODO: HAL_PCD_EP_Open @1771 [stm32h7xx_hal_pcd.c]
 	USB_IEP_t* iep = handle->IEP[ep_num];
-	iep->packet_size =	mps;			// set max packet size
+	iep->mps =	mps;			// set max packet size
 	iep->type =			type;
 	iep->used =			0b1U;
 	// TODO: consider saving epnum
@@ -72,7 +72,7 @@ static inline void /* TODO: used in init! */ open_IEP(USB_handle_t* handle, uint
 static inline void /* TODO: used in init! */ open_OEP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
 	// TODO: HAL_PCD_EP_Open @1771 [stm32h7xx_hal_pcd.c]
 	USB_OEP_t* oep = handle->OEP[ep_num];
-	oep->packet_size =	mps;		// set max packet size
+	oep->mps =	mps;		// set max packet size
 	oep->type =			type;
 	oep->used =			0b1U;
 	// TODO: consider saving epnum
@@ -89,18 +89,17 @@ static inline void /* TODO: used in init! */ open_OEP(USB_handle_t* handle, uint
 static inline void /* TODO: used in init! */ open_EP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
 	open_IEP(handle, ep_num, mps, type); open_OEP(handle, ep_num, mps, type);
 }
-static inline void start_OEP0(USB_handle_t* handle, USB_OEP_t* oep) {
+static inline void /**/ start_OEP0(USB_handle_t* handle, USB_OEP_t* oep) {
 	// TODO: CORE VERISON?	[stm32h7xx_ll_usb.c] @2263
-	if (!(O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
-		O_EP->DOEPTSIZ = (
-			0x18UL									|	// expect 24 bytes to be received
-			(0b1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos)	|	// set bit (will be reset when packet is received)
-			(0x3UL << USB_OTG_DOEPTSIZ_STUPCNT_Pos)		// set max number of back to back packets to 3
-		);
-		// TODO: DMA?			[stm32h7xx_ll_usb.c] @1427
-	}
+	if (O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA) { return; }
+	O_EP->DOEPTSIZ = (
+		0x18UL									|	// expect 24 bytes to be received
+		(0b1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos)	|	// set bit (will be reset when packet is received)
+		(0x3UL << USB_OTG_DOEPTSIZ_STUPCNT_Pos)		// set max number of back to back packets to 3
+	);
+	// TODO: DMA?			[stm32h7xx_ll_usb.c] @1427
 }
-static inline void stall_IEP(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ stall_IEP(USB_handle_t* handle, uint8_t ep_num) {
 	USB_IEP_t* iep = handle->IEP[ep_num];
 	iep->stall = 0b1U;
 	if (ep_num && !(I_EP->DIEPCTL & USB_OTG_DIEPCTL_EPENA)) {
@@ -108,7 +107,7 @@ static inline void stall_IEP(USB_handle_t* handle, uint8_t ep_num) {
 	}
     I_EP->DIEPCTL |= USB_OTG_DIEPCTL_STALL;
 }
-static inline void stall_OEP(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ stall_OEP(USB_handle_t* handle, uint8_t ep_num) {
 	USB_OEP_t* oep = handle->OEP[ep_num];
 	oep->stall = 0b1U;
 	if (ep_num && !(O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
@@ -117,10 +116,10 @@ static inline void stall_OEP(USB_handle_t* handle, uint8_t ep_num) {
 	O_EP->DOEPCTL |= USB_OTG_DOEPCTL_STALL;
 	start_OEP0(handle, oep);
 }
-static inline void stall_EP(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ stall_EP(USB_handle_t* handle, uint8_t ep_num) {
 	stall_IEP(handle, ep_num); stall_OEP(handle, ep_num);
 }
-static inline void unstall_IEP(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ unstall_IEP(USB_handle_t* handle, uint8_t ep_num) {
 	USB_IEP_t* iep = handle->IEP[ep_num];
 	iep->stall = 0b0U;
 	I_EP->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;
@@ -128,7 +127,7 @@ static inline void unstall_IEP(USB_handle_t* handle, uint8_t ep_num) {
 		I_EP->DIEPCTL |= USB_OTG_DIEPCTL_SD0PID_SEVNFRM;	// set DATA0
 	}
 }
-static inline void unstall_OEP(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ unstall_OEP(USB_handle_t* handle, uint8_t ep_num) {
 	USB_OEP_t* oep = handle->OEP[ep_num];
 	oep->stall = 0b0U;
 	O_EP->DOEPCTL &= ~USB_OTG_DOEPCTL_STALL;
@@ -137,7 +136,7 @@ static inline void unstall_OEP(USB_handle_t* handle, uint8_t ep_num) {
 	}
 }
 
-/*!< IO stage logic */
+/*!< IO logic */
 static inline void /**/ IN_transfer(USB_handle_t* handle, uint8_t ep_num, void* buffer, uint32_t size) {
 	USB_IEP_t* iep = handle->IEP[ep_num];
 	iep->src = buffer;
@@ -153,7 +152,7 @@ static inline void /**/ IN_transfer(USB_handle_t* handle, uint8_t ep_num, void* 
 			I_EP->DIEPTSIZ |= (1UL << USB_OTG_DIEPTSIZ_PKTCNT_Pos);
 		} else {
 			I_EP->DIEPTSIZ |= (
-				((iep->size + iep->packet_size - 1U) / iep->packet_size) << USB_OTG_DIEPTSIZ_PKTCNT_Pos
+				((iep->size + iep->mps - 1U) / iep->mps) << USB_OTG_DIEPTSIZ_PKTCNT_Pos
 				& USB_OTG_DIEPTSIZ_PKTCNT
 			);
 			I_EP->DIEPTSIZ |= (USB_OTG_DIEPTSIZ_XFRSIZ & iep->size);
@@ -161,24 +160,80 @@ static inline void /**/ IN_transfer(USB_handle_t* handle, uint8_t ep_num, void* 
 		}
 		// TODO: DMA? [stm32h7xx_ll_usb.c] @783
 		// TODO: ISO? [stm32h7xx_ll_usb.c] @810
-
-		// TODO: (void)USB_EPStartXfer(hpcd->Instance, ep, (uint8_t)hpcd->Init.dma_enable);
 	} else {
 		I_EP->DIEPTSIZ |= (1UL << USB_OTG_DIEPTSIZ_PKTCNT_Pos);
-		if (size > iep->packet_size) { iep->size = iep->packet_size; }  // always one packet TODO: valid?
-		I_EP->DIEPTSIZ |= (iep->size & USB_OTG_DIEPTSIZ_XFRSIZ);
+		if (size > iep->mps) { size = iep->mps; }  // reuse 'size' as next transfer size
+		I_EP->DIEPTSIZ |= (size & USB_OTG_DIEPTSIZ_XFRSIZ);
 		// TODO: DMA? [stm32h7xx_ll_usb.c] @925
 	}
 
 	I_EP->DIEPCTL |= (USB_OTG_DIEPCTL_CNAK | USB_OTG_DIEPCTL_EPENA);	// enable EP
 	if (size) { DEV->DIEPEMPMSK |= 0b1UL << ep_num; }					// unmask TX FIFO empty interrupt
 }
-static inline void /*TODO*/ control_IN_stage(USB_handle_t* handle, uint8_t ep_num) {
-	// TODO: @403
+static inline void /**/ OUT_transfer(USB_handle_t* handle, uint8_t ep_num, void* buffer, uint32_t size) {
+	USB_OEP_t* oep = handle->OEP[ep_num];
+	oep->dest = buffer;
+	oep->size = size;
+	oep->count = 0U;
+	// TODO: DMA? [stm32h7xx_hal_pcd.c] @1860
 
+	O_EP->DOEPTSIZ &= ~USB_OTG_DOEPTSIZ_PKTCNT;
+	O_EP->DOEPTSIZ &= ~USB_OTG_DOEPTSIZ_XFRSIZ;
+
+	if (ep_num) {
+		if (!size) {
+			O_EP->DOEPTSIZ |= (1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos);
+			O_EP->DOEPTSIZ |= (USB_OTG_DOEPTSIZ_XFRSIZ & oep->mps);
+		} else {
+			O_EP->DOEPTSIZ |= (
+				((oep->size + oep->mps - 1U) / oep->mps) << USB_OTG_DOEPTSIZ_PKTCNT_Pos
+				& USB_OTG_DOEPTSIZ_PKTCNT
+			);
+			O_EP->DOEPTSIZ |= (USB_OTG_DOEPTSIZ_XFRSIZ & oep->size);
+		}
+		// TODO: DMA? [stm32h7xx_ll_usb.c] @856
+		// TODO: ISO? [stm32h7xx_ll_usb.c] @864
+	} else {
+		oep->size = oep->mps;	// TODO @956 ????????
+		O_EP->DOEPTSIZ |= (1UL << USB_OTG_DOEPTSIZ_PKTCNT_Pos);
+		O_EP->DOEPTSIZ |= (USB_OTG_DOEPTSIZ_XFRSIZ & oep->mps);
+		// TODO: DMA? [stm32h7xx_ll_usb.c] @967
+	}
+
+	O_EP->DOEPCTL |= (USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA);	// enable EP
 }
-static inline void data_IN_stage(USB_handle_t* handle, uint8_t ep_num) {
-	if (!ep_num) { return control_IN_stage(handle, ep_num); }
+
+/* IO stage logic*/ // TODO: check "control_IN/OUT_stage"
+static inline void /*check*/ control_IN_stage(USB_handle_t* handle) {
+	if (handle->EP0_state != EP_DATA_IN) { return; }
+	USB_IEP_t* iep = handle->IEP[0];
+	uint32_t len = iep->size - iep->count;
+	// TODO: check code because 'pep->rem_length' in HAL is implemented strangely
+	if (len) {
+		// continue sending data (iep->src and iep->count incremented!)
+		IN_transfer(handle, 0, iep->src, len);	// continue transfer
+		OUT_transfer(handle, 0, NULL, 0UL);	// prepare for premature end of transfer
+		return;
+	} if (  // end: send ZLP packet
+		iep->size >= iep->mps &&
+		iep->size < handle->EP0_data
+	) {
+		handle->EP0_data = 0UL;
+		IN_transfer(handle, 0, NULL, 0UL);	// stop transfer
+		OUT_transfer(handle, 0, NULL, 0UL);	// prepare for premature end of transfer
+		return;
+	} if (
+		handle->state == USB_CONFIGURED &&
+		handle->class->IEP0_sent
+	) {
+		handle->class->IEP0_sent(handle);		// TODO: errors??
+	}
+	stall_IEP(handle, 0);
+	handle->EP0_state = EP_STATUS_OUT;
+	OUT_transfer(handle, 0, NULL, 0UL);
+}
+static inline void /**/ data_IN_stage(USB_handle_t* handle, uint8_t ep_num) {
+	if (!ep_num) { return control_IN_stage(handle); }
 	if (
 		handle->class->data_in &&		// make sure the class has a data_in function
 		handle->state == USB_CONFIGURED	// make sure the device is configured
@@ -186,9 +241,35 @@ static inline void data_IN_stage(USB_handle_t* handle, uint8_t ep_num) {
 		handle->class->data_in(handle->usb, ep_num);	// TODO: errors??
 	}
 }
+static inline void /*check*/ control_OUT_stage(USB_handle_t* handle) {
+	if (handle->EP0_state != EP_DATA_OUT) { return; }
+	USB_OEP_t* oep = handle->OEP[0];
+	uint32_t len = oep->size - oep->count;
+	if (len) {
+		len = len > oep->mps ? oep->mps : len;
+		OUT_transfer(handle, 0, oep->dest, len);
+		return;
+	} if (
+		handle->state == USB_CONFIGURED &&
+		handle->class->OEP0_ready
+	) {
+		handle->class->OEP0_ready(handle);		// TODO: errors??
+	}
+	handle->EP0_state = EP_STATUS_IN;
+	IN_transfer(handle, 0, NULL, 0U);
+}
+static inline void /**/ data_OUT_stage(USB_handle_t* handle, uint8_t ep_num) {
+	if (!ep_num) { return control_OUT_stage(handle); }
+	if (
+		handle->class->data_out &&		// make sure the class has a data_in function
+		handle->state == USB_CONFIGURED	// make sure the device is configured
+	) {
+		handle->class->data_out(handle->usb, ep_num);	// TODO: errors??
+	}
+}
 
-/* setup stage logic */
-static inline void get_device_descriptor(USB_handle_t* handle, setup_header_t* req) {
+/* setup stage logic */  // TODO: check functions (low priority)
+static inline void /**/ get_device_descriptor(USB_handle_t* handle, setup_header_t* req) {
 	uint8_t* ptr = NULL;
 
 	switch (req->value >> 8) {
@@ -232,8 +313,10 @@ static inline void get_device_descriptor(USB_handle_t* handle, setup_header_t* r
 	handle->EP0_state = EP_DATA_IN;						// control data IN
 	IN_transfer(handle, 0, ptr, *ptr);
 }
-static inline void device_setup_request(USB_handle_t* handle) {
+static inline void /**/ device_setup_request(USB_handle_t* handle) {
 	setup_header_t* req = &handle->request;
+	uint8_t index;
+
 	switch (req->type) {
 	case STANDARD_REQUEST:
 		switch (req->command) {
@@ -293,7 +376,7 @@ static inline void device_setup_request(USB_handle_t* handle) {
 			default: break;
 			} break;
 		case SET_CONFIGURATION:
-			uint8_t index = req->value & 0xFFU;
+			index = req->value & 0xFFU;
 			if (index > USB_OTG_MAX_CONFIG_COUNT) { break; }	// error
 			switch (handle->state) {
 			case USB_ADDRESSED:
@@ -328,7 +411,7 @@ static inline void device_setup_request(USB_handle_t* handle) {
 	// catch all errors
 	stall_EP(handle, 0);
 }
-static inline void interface_setup_request(USB_handle_t* handle) {
+static inline void /**/ interface_setup_request(USB_handle_t* handle) {
 	setup_header_t* req = &handle->request;
 	switch (req->type) {
 	case STANDARD_REQUEST:
@@ -352,7 +435,7 @@ static inline void interface_setup_request(USB_handle_t* handle) {
 	// catch all errors
 	stall_EP(handle, 0);
 }
-static inline void endpoint_setup_request(USB_handle_t* handle) {
+static inline void /**/ endpoint_setup_request(USB_handle_t* handle) {
 	setup_header_t* req = &handle->request;
 	uint8_t ep_num = req->index & 0x7FU;
 	uint8_t in = (req->index & 0x80U) == 0x80U;
@@ -552,79 +635,57 @@ static inline void /**/ USB_enumeration_done_IRQ(USB_handle_t* handle, USB_IEP_t
 	USB->GINTSTS = USB_OTG_GINTSTS_ENUMDNE;		// clear interrupt
 }
 
-/*!< IEP IRQ logic */
+/*!< IEP IRQ logic */  // TODO: check "IEP_FIFO_empty_IRQ" for out of bounds read possibility
 static inline void /**/ IEP_transfer_complete_IRQ(USB_handle_t* handle, USB_IEP_t* iep, uint8_t ep_num) {
 	DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);	// mask interrupt
-	I_EP->DIEPINT |= USB_OTG_DIEPINT_XFRC;
+	I_EP->DIEPINT = USB_OTG_DIEPINT_XFRC;
 	// TODO: DMA?				[stm32h7xx_hal_pcd.c] @1209
 	data_IN_stage(handle, ep_num);
 }
-static inline void IEP_disabled_IRQ(USB_handle_t* handle, USB_IEP_t* iep, uint8_t ep_num) {
+static inline void /**/ IEP_disabled_IRQ(USB_handle_t* handle, USB_IEP_t* iep, uint8_t ep_num) {
 	flush_TX_FIFO(handle->usb, ep_num);
 	// TODO: ISO?				[stm32h7xx_hal_pcd.c] @1245
-	I_EP->DIEPINT |= USB_OTG_DIEPINT_EPDISD;
+	I_EP->DIEPINT = USB_OTG_DIEPINT_EPDISD;
 }
-static inline void IEP_timeout_IRQ(USB_IEP_t* iep) {
-	I_EP->DIEPINT |= USB_OTG_DIEPINT_TOC;
-}
-static inline void IEP_ITTXFE_IRQ(USB_IEP_t* iep) {
-	I_EP->DIEPINT |= USB_OTG_DIEPINT_ITTXFE;
-}
-static inline void IEP_NAK_effective_IRQ(USB_IEP_t* iep) {
-	I_EP->DIEPINT |= USB_OTG_DIEPINT_INEPNE;
-}
-static inline void IEP_FIFO_empty_IRQ(USB_handle_t* handle, USB_IEP_t* iep, uint8_t ep_num) {
-	if (iep->count <= iep->size) {
-		uint32_t	len, len32, i;
-		uint32_t	buffer = (uint32_t)iep->src;
-		uint8_t		*src, *FIFO = (uint8_t*)((uint32_t)USB + (0x1000UL * (ep_num + 1U)));
-		while (iep->size && iep->count < iep->size) {
-			len =	iep->size - iep->count;
-			len32 =	((len > iep->packet_size ? iep->packet_size : len) + 3U) >> 2U;
-			if ((I_EP->DTXFSTS & 0xFFFFUL) < len32) { break; }
-			src =	iep->src;
-			for (i = 0UL; i < len32; i++) {
-				*FIFO = __UNALIGNED_UINT32_READ(src);
-				src++; src++; src++; src++;  // 4x inc is faster than an add due to pipelining
-			} iep->src +=	len;
-		} iep->count +=			((uint32_t)iep->src) - buffer;
-		if (iep->size <= iep->count) {
-			// mask TX FIFO empty interrupt after all data is sent
-			DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);
-		}
+static inline void /*check*/ IEP_FIFO_empty_IRQ(USB_handle_t* handle, USB_IEP_t* iep, uint8_t ep_num) {
+	if (iep->count > iep->size) { return; }
+	uint32_t	len, len32, i, buffer;
+	uint8_t		*FIFO = (uint8_t*)((uint32_t)USB + (0x1000UL * (ep_num + 1U)));
+	while (iep->size && iep->count < iep->size) {
+		len =	iep->size - iep->count;
+		len32 =	((len > iep->mps ? iep->mps : len) + 3U) >> 2U;
+		if ((I_EP->DTXFSTS & USB_OTG_DTXFSTS_INEPTFSAV) < len32) { break; }
+		buffer = (uint32_t)iep->src;							// save start ptr
+		for (i = 0UL; i < len32; i++) {							// write words
+			*FIFO = __UNALIGNED_UINT32_READ(iep->src);
+			iep->src++; iep->src++; iep->src++; iep->src++;		// 4x inc is faster than an add due to pipelining
+		}  // TODO: out of bounds read??
+		iep->count += buffer - ((uint32_t)iep->src);			// write ptr difference
+	}
+	if (iep->size <= iep->count) {
+		// mask TX FIFO empty interrupt after all data is sent
+		DEV->DIEPEMPMSK &= ~(0b1UL << ep_num);
 	}
 }
 
 /*!< OEP IRQ logic */
-static inline void OEP_transfer_complete(USB_handle_t* handle, USB_OEP_t* oep, uint8_t ep_num) {
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_XFRC;
+static inline void /**/ OEP_transfer_complete(USB_handle_t* handle, USB_OEP_t* oep, uint8_t ep_num) {
+	O_EP->DOEPINT = USB_OTG_DOEPINT_XFRC;
 	// TODO: DMA?				[stm32h7xx_hal_pcd.c] @2217
 	// TODO: CORE VERISON?		[stm32h7xx_hal_pcd.c] @2274
-	if (!ep_num) {
-		if (!oep->size) { start_OEP0(handle, oep); }
-		// TODO: @326 [usbd_core.c]
-		if (handle->EP0_state == EP_DATA_OUT) {
-			()
-			// TODO: CONTINUE HERE!!!!!!!!!!!!!!!!!!!!!!!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-			uint32_t len = oep->size - oep->count;
-			if (len > oep->packet_size) {
-				//oep->count += oep->packet_size;			// tmp!!
-				// TODO: (void)USBD_CtlContinueSendData(pdev, pdata, oep->size - oep->count);
-				// TODO: (void)USBD_LL_PrepareReceive(pdev, 0U, NULL, 0U);
-			}
-		}
-	}
-	// TODO: @326 [usbd_core.c]
+
+	if (!ep_num && !oep->size) { start_OEP0(handle, oep); }
+	data_OUT_stage(handle, ep_num);
 }
-static inline void OEP_disabled(USB_handle_t* handle, USB_OEP_t* oep) {
+static inline void /**/ OEP_disabled(USB_handle_t* handle, USB_OEP_t* oep) {
 	if (handle->usb->GINTSTS & USB_OTG_GINTSTS_BOUTNAKEFF) {
 		DEV->DCTL |= USB_OTG_DCTL_CGONAK;
 	}
 	// TODO: ISO?				[stm32h7xx_hal_pcd.c] @1158
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_EPDISD;
+	O_EP->DOEPINT = USB_OTG_DOEPINT_EPDISD;
 }
-static inline void OEP_setup_done(USB_handle_t* handle, USB_OEP_t* oep) {
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_STUP;
+static inline void /**/ OEP_setup_done(USB_handle_t* handle, USB_OEP_t* oep) {
+	O_EP->DOEPINT = USB_OTG_DOEPINT_STUP;
 	// TODO: CORE VERISON/DMA?	[stm32h7xx_hal_pcd.c] @2328
 	uint8_t* header = handle->setup;
 	setup_header_t* req = &handle->request;
@@ -636,6 +697,7 @@ static inline void OEP_setup_done(USB_handle_t* handle, USB_OEP_t* oep) {
 	req->length =		(*header++ << 8U) | *header;
 
 	handle->EP0_state = EP_SETUP;
+	handle->EP0_data = req->length;	// TODO: USE! (or needed??)
 	switch (req->recipiant) {
 	case RECIPIANT_DEVICE:		device_setup_request(handle);		break;
 	case RECIPIANT_INTERFACE:	interface_setup_request(handle);	break;
@@ -649,9 +711,8 @@ static inline void OEP_setup_done(USB_handle_t* handle, USB_OEP_t* oep) {
 }
 
 /*!< IRQ handleing */
-static inline void IEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ IEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	USB_IEP_t	*iep =		handle->IEP[ep_num];
-
 	uint32_t	ep_int =	(
 		I_EP->DIEPINT & DEV->DIEPMSK &										// get all triggered interrupts
 		((DEV->DIEPEMPMSK >> ep_num) & 0b1UL) << USB_OTG_DIEPINT_TXFE_Pos	// include TXFE interrupt if enabled
@@ -664,13 +725,13 @@ static inline void IEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	/* AHB error interrupt */							// TODO: DMA?
 	I_EP->DIEPINT = USB_OTG_DIEPINT_AHBERR;				// clear AHB error interrupt
 	/* timeout condition interrupt */
-	if (ep_int & USB_OTG_DIEPINT_TOC)					{ IEP_timeout_IRQ(iep); }
-	/* IN token received when Tx FIFO is empty interrupt */
-	if (ep_int & USB_OTG_DIEPINT_ITTXFE)				{ IEP_ITTXFE_IRQ(iep); }
+	I_EP->DIEPINT = USB_OTG_DIEPINT_TOC;				// clear timeout condition interrupt
+	/* IN token received when TX FIFO is empty interrupt */
+	I_EP->DIEPINT = USB_OTG_DIEPINT_ITTXFE;				// clear IN token received when TX FIFO empty interrupt
 	/* IN token recieved with EP mismatch interrupt */
 	I_EP->DIEPINT = USB_OTG_DIEPINT_INEPNM;				// clear IN token EP mismatch interrupt
 	/* IN enpoint NAK effective interrupt */
-	if (ep_int & USB_OTG_DIEPINT_INEPNE)				{ IEP_NAK_effective_IRQ(iep); }
+	I_EP->DIEPINT = USB_OTG_DIEPINT_INEPNE;				// clear IN endpoint NAK effective interrupt
 	/* TX FIFO empty interrupt */
 	if (ep_int & USB_OTG_DIEPINT_TXFE)					{ IEP_FIFO_empty_IRQ(handle, iep, ep_num); }
 	/* TX FIFO underrun interrupt */
@@ -682,9 +743,8 @@ static inline void IEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	/* NAK interrupt */
 	I_EP->DIEPINT = USB_OTG_DIEPINT_NAK;				// clear NAK interrupt
 }
-static inline void OEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
+static inline void /**/ OEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	USB_OEP_t	*oep =		handle->OEP[ep_num];
-
 	uint32_t	ep_int =	O_EP->DOEPINT & DEV->DOEPMSK;	// get all triggered interrupts
 
 	/* transfer complete interrupt */
@@ -696,9 +756,9 @@ static inline void OEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	/* SETUP phase done */
 	if (ep_int & USB_OTG_DOEPINT_STUP)					{ OEP_setup_done(handle, oep); }
 	/* OUT token received when endpoint disabled interrupt */
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_OTEPDIS;			// clear OUT token received when endpoint disabled interrupt
+	O_EP->DOEPINT = USB_OTG_DOEPINT_OTEPDIS;			// clear OUT token received when endpoint disabled interrupt
 	/* status phase received for control write */
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_OTEPSPR;			// clear status phase received for control write
+	O_EP->DOEPINT = USB_OTG_DOEPINT_OTEPSPR;			// clear status phase received for control write
 	/* back to back setup packet recived interrupt */
 	O_EP->DOEPINT = USB_OTG_DOEPINT_B2BSTUP;			// clear back to back setup packet received interrupt
 	/* OUT packet error interrupt */
@@ -708,13 +768,13 @@ static inline void OEP_common_handler(USB_handle_t* handle, uint8_t ep_num) {
 	/* babble error interrupt */
 	O_EP->DOEPINT = USB_OTG_DOEPINT_BERR;				// clear babble error interrupt
 	/* NAK interrupt */
-	O_EP->DOEPINT |= USB_OTG_DOEPINT_NAK;				// clear NAK interrupt
+	O_EP->DOEPINT = USB_OTG_DOEPINT_NAK;				// clear NAK interrupt
 	/* NYET interrupt */								// TODO: HS?
 	O_EP->DOEPINT = USB_OTG_DOEPINT_NYET;				// clear NYET interrupt
 	/* setup packet received interrupt */				// TODO: DMA?
 	O_EP->DOEPINT = USB_OTG_DOEPINT_STPKTRX;			// clear setup packet received interrupt
 }
-static /*  */ void USB_common_handler(USB_handle_t* handle) {
+static /*  */ void /**/ USB_common_handler(USB_handle_t* handle) {
 	const uint32_t	irqs = USB->GINTSTS & USB->GINTMSK;
 	if (!irqs) {  // TODO why was this interrupt triggered if no unmasked interrupts are triggered??? NEEDED??
 		USB->GINTSTS = USB->GINTSTS;  // clear the masked interrupts

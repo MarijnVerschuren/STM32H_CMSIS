@@ -93,11 +93,14 @@ typedef struct {
 } setup_header_t;
 
 typedef struct {
-	void (*init)	(void* handle);						// TODO: init
-	void (*de_init)	(void* handle);						// TODO: init
-	void (*setup)	(void* handle);						// TODO: init
-	void (*data_in)	(void* handle, uint8_t epnum);		// TODO: init
-	void (*SOF)		(void* handle);						// TODO: needed??
+	void (*init)		(void* handle);					// TODO: init
+	void (*de_init)		(void* handle);					// TODO: init
+	void (*setup)		(void* handle);					// TODO: init
+	void (*data_in)		(void* handle, uint8_t epnum);	// TODO: init
+	void (*data_out)	(void* handle, uint8_t epnum);	// TODO: init
+	void (*SOF)			(void* handle);					// TODO: needed??
+	void (*IEP0_sent)	(void* handle);					// TODO: needed??
+	void (*OEP0_ready)	(void* handle);					// TODO: needed??
 
 	uint8_t*					descriptor;				// TODO: init
 	uint16_t					descriptor_size;		// TODO: init (variable size)
@@ -107,7 +110,7 @@ typedef struct {
 typedef struct {
 	USB_OTG_INEndpointTypeDef*	ep;
 
-	uint32_t					packet_size;			// max packet size
+	uint32_t					mps;					// max packet size
 
 	void*						src;					// TX buffer source (buffer + count)
 	uint32_t					size;					// to send
@@ -122,7 +125,7 @@ typedef struct {
 typedef struct {
 	USB_OTG_OUTEndpointTypeDef*	ep;
 
-	uint32_t					packet_size;			// max packet size
+	uint32_t					mps;					// max packet size
 
 	void*						dest;					// RX buffer destination (buffer + count)
 	uint32_t					size;					// RX buffer size
@@ -151,6 +154,7 @@ typedef struct {
 	EP_state_t					EP0_state	: 3;
 	uint16_t					address		: 7;
 	uint16_t					class_init	: 1;
+	uint32_t					EP0_data;				// TODO: USE! (or needed??)
 	uint8_t						device_config;			// response sent on GET_STATUS request
 	// descriptors
 	uint8_t*					descriptor;				// TODO: init

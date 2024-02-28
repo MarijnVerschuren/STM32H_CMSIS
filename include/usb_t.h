@@ -113,11 +113,12 @@ typedef struct {
 	uint32_t					size;					// to send
 	uint32_t					count;					// sent
 
+	// TODO: consider saving epnum
 	uint8_t						type	: 2;			// endpoint type
 	uint8_t						stall	: 1;			// stall condition
 	uint8_t						used	: 1;
 } USB_IEP_t;  // (host) in endpoint status type
-
+// TODO: consider combining types (or abstract type)
 typedef struct {
 	USB_OTG_OUTEndpointTypeDef*	ep;
 
@@ -127,10 +128,12 @@ typedef struct {
 	uint32_t					size;					// RX buffer size
 	uint32_t					count;					// received
 
+	// TODO: consider saving epnum
 	uint8_t						type	: 2;			// endpoint type
 	uint8_t						stall	: 1;			// stall condition
 	uint8_t						used	: 1;
 } USB_OEP_t;  // (host) out endpoint status type
+// TODO: consider combining types (or abstract type)
 
 typedef struct {
 	// physical device handles

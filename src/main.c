@@ -5,7 +5,7 @@
 #include "encoder.h"
 #include "usart.h"
 #include "i2c.h"
-#include "usb.h"
+#include "usb/usb.h"
 #include "crc.h"
 #include "rng.h"
 #include "watchdog.h"
@@ -121,18 +121,11 @@ int main(void) {
 	/* USB config */
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
-	// config FIFO
-	config_USB_RX_FIFO(USB2_OTG_FS, 0x80);
-	config_USB_TX_FIFO(USB2_OTG_FS, 0, 0x40);
-	config_USB_TX_FIFO(USB2_OTG_FS, 1, 0x80);
-	// config interface
-	config_USB_interface(USB2_OTG_FS);  // TODO: interface types and enpoint configs/usage
+	USB2_OTG_FS->CID = 0x4D2E562EUL; // set CID to "M.V." for fun :)
+	// config interfaces
+	config_USB_interface(USB2_OTG_FS);  // TODO!!!!!!!!!!!!!!!! (alwasys composite)
 	// start device
 	start_USB(USB2_OTG_FS);
-	// TODO: continue working on interface init	<<<<<<
-	// TODO: check if interrupt works
-	// TODO: write interrupt code
-	// TODO: validate / test
 
 	// Watchdog config (32kHz / (4 << prescaler))
 	//config_watchdog(0, 0xFFFUL);	// 1s

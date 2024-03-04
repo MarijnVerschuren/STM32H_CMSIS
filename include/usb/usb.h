@@ -8,8 +8,10 @@
 #include "sys.h"
 #include "nvic.h"
 #include "gpio.h"
+#include "usb/usb_handle.h"
 
 
+#ifdef USB_LIB
 /*!<
  * definitions
  * */
@@ -37,8 +39,7 @@ typedef enum {
 	USB_CLK_SRC_PLL1_Q =	0b01,
 	USB_CLK_SRC_PLL3_Q =	0b10,
 	USB_CLK_SRC_HSI48 =		0b11
-} USB_CLK_SRC_t;
-
+}	USB_CLK_SRC_t;
 typedef enum {
 	USB_PIN_DISABLE =		0x00000000,
 	// USB1_FS
@@ -68,13 +69,13 @@ typedef enum {
 	USB2_FS_DN_A11 =		0x0B0A003B,
 	USB2_FS_DM_A11 =		USB2_FS_DN_A11,
 	USB2_FS_DP_A12 =		0x0C0A003B
-} USB_GPIO_t;
+}	USB_GPIO_t;
 
 
 /*!<
  * variables
  * */
-extern uint32_t		USB_kernel_frequency;
+extern uint32_t USB_kernel_frequency;
 
 
 /*!<
@@ -82,11 +83,11 @@ extern uint32_t		USB_kernel_frequency;
  * */  // TODO: collapse unneeded fconfig functions!!!!!!!
 void config_USB_kernel_clock(USB_CLK_SRC_t src);
 
-void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
+void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size);
 void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
 // TODO: external phy, host mode
 
-void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb);
+void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb, USB_descriptor_t* descriptor, USB_class_t* class);
 void config_USB_interface(USB_OTG_GlobalTypeDef* usb);
 
 void config_USB_RX_FIFO(USB_OTG_GlobalTypeDef* usb, uint32_t size);
@@ -97,4 +98,5 @@ void stop_USB(USB_OTG_GlobalTypeDef* usb);
 
 // TODO: deinit func
 
+#endif // USB_LIB
 #endif // STM32H_CMSIS_USB_H

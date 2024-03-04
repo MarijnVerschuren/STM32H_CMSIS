@@ -25,5 +25,6 @@
 #endif
 
 #include "base.h"
+#include "config.h"
 
 #endif //STM32H_CMSIS_MAIN_H

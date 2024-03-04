@@ -2,25 +2,44 @@
 // Created by marijn on 2/11/24.
 //
 
-#include "usb.h"
-#include "usb_t.h"  // TODO remove file and hide contents
+#include "usb/usb.h"
+
+
+#ifdef USB_LIB
 
 
 /*!<
  * defines
 * */
-// all code in this file is essentially forced into two functions: OTG_HS_IRQHandler and OTG_FS_IRQHandler
-// TODO: consider compiling everything into USB_common_handler to reduce program size!!!
+#define DEVICE_FEATURE_WAKE_HOST			0x01U
+
+#define DEVICE_CONFIG_SELF_POWERED			0x01U
+#define DEVICE_CONFIG_WAKE_HOST				0x02U
+
+#define USB_DEVICE_DESCRIPTOR				0x01U
+#define USB_CONFIGURATION_DESCRIPTOR		0x02U
+#define USB_STRING_DESCRIPTOR				0x03U
+#define USB_INTERFACE_DESCRIPTOR			0x04U
+#define USB_ENDPOINT_DESCRIPTOR				0x05U
+#define USB_QUALIFIER_DESCRIPTOR			0x06U
+#define USB_OTHER_SPEED_DESCRIPTOR			0x07U
+// #define USB_DEBUG_DESCRIPTOR				0x0AU
+#define USB_IAD_DESCRIPTOR					0x0BU
+#define USB_BOS_DESCRIPTOR					0x0FU
+
+#define USB_LANG_ID_STRING_DESCRIPTOR		0x00U
+#define USB_MANUFACTURER_STRING_DESCRIPTOR	0x01U
+#define USB_PRODUCT_STRING_DESCRIPTOR		0x02U
+#define USB_SERIAL_STRING_DESCRIPTOR		0x03U
+#define USB_CONFIG_STRING_DESCRIPTOR		0x04U
+#define USB_INTERFACE_STRING_DESCRIPTOR		0x05U
+
 #define inline __attribute__((always_inline))
 
-#define USB (handle->usb)
-#define DEV (handle->device)
-#define I_EP (iep->ep)
-#define O_EP (oep->ep)
 
 
 /*!<
- * register types
+ * types
  * */
 typedef struct {
 	uint32_t EPNUM		: 4;	// endpoint number
@@ -31,7 +50,8 @@ typedef struct {
 	uint32_t _0			: 2;	// reserved 0
 	uint32_t STSPHST	: 1;	// status phase start
 	uint32_t _1			: 4;	// reserved 1
-} GRXSTSR_t;
+}	GRXSTSR_t;
+
 
 /*!<
  * variables
@@ -48,11 +68,9 @@ extern void flush_TX_FIFOS(USB_OTG_GlobalTypeDef* usb);
 
 
 /*!<
- * static
-* */
-/*!< setup / init */
-static inline void /* TODO: used in init! */ open_IEP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
-	// TODO: HAL_PCD_EP_Open @1771 [stm32h7xx_hal_pcd.c]
+ * exported functions
+ * */
+void open_IEP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
 	USB_IEP_t* iep = handle->IEP[ep_num];
 	iep->mps =	mps;			// set max packet size
 	iep->type =			type;
@@ -69,8 +87,7 @@ static inline void /* TODO: used in init! */ open_IEP(USB_handle_t* handle, uint
 		);
 	}
 }
-static inline void /* TODO: used in init! */ open_OEP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
-	// TODO: HAL_PCD_EP_Open @1771 [stm32h7xx_hal_pcd.c]
+void open_OEP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
 	USB_OEP_t* oep = handle->OEP[ep_num];
 	oep->mps =	mps;		// set max packet size
 	oep->type =			type;
@@ -86,9 +103,61 @@ static inline void /* TODO: used in init! */ open_OEP(USB_handle_t* handle, uint
 		);
 	}
 }
-static inline void /* TODO: used in init! */ open_EP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
+void open_EP(USB_handle_t* handle, uint8_t ep_num, uint16_t mps, EP_type_t type) {
 	open_IEP(handle, ep_num, mps, type); open_OEP(handle, ep_num, mps, type);
 }
+void close_IEP(USB_handle_t* handle, uint8_t ep_num) {
+	USB_IEP_t* iep = handle->IEP[ep_num];
+	iep->mps =	0U;
+	iep->type = 0b00;
+	iep->used = 0b0;
+
+	if (I_EP->DIEPCTL & USB_OTG_DIEPCTL_EPENA) {
+		I_EP->DIEPCTL |= (
+			USB_OTG_DIEPCTL_SNAK		|
+			USB_OTG_DIEPCTL_EPDIS
+		);
+	}
+	DEV->DEACHMSK &= ~(0b1UL << ep_num);
+	DEV->DAINTMSK &= ~(0b1UL << ep_num);
+	I_EP->DIEPCTL &= ~(
+		USB_OTG_DIEPCTL_USBAEP			|
+		USB_OTG_DIEPCTL_MPSIZ			|
+		USB_OTG_DIEPCTL_TXFNUM			|
+		USB_OTG_DIEPCTL_SD0PID_SEVNFRM	|
+		USB_OTG_DIEPCTL_EPTYP
+	);
+}
+void close_OEP(USB_handle_t* handle, uint8_t ep_num) {
+	USB_OEP_t* oep = handle->OEP[ep_num];
+	oep->mps =	0U;
+	oep->type = 0b00;
+	oep->used = 0b0;
+
+	if (O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA) {
+		O_EP->DOEPCTL |= (
+			USB_OTG_DOEPCTL_SNAK		|
+			USB_OTG_DOEPCTL_EPDIS
+		);
+	}
+	DEV->DEACHMSK &= ~(0x100UL << ep_num);
+	DEV->DAINTMSK &= ~(0x100UL << ep_num);
+	O_EP->DOEPCTL &= ~(
+		USB_OTG_DOEPCTL_USBAEP			|
+		USB_OTG_DOEPCTL_MPSIZ			|
+		USB_OTG_DOEPCTL_SD0PID_SEVNFRM	|
+		USB_OTG_DOEPCTL_EPTYP
+	);
+}
+void close_EP(USB_handle_t* handle, uint8_t ep_num) {
+	close_IEP(handle, ep_num); close_OEP(handle, ep_num);
+}
+
+
+/*!<
+ * static
+* */
+/*!< setup / init */
 static inline void /**/ start_OEP0(USB_handle_t* handle, USB_OEP_t* oep) {
 	// TODO: CORE VERISON?	[stm32h7xx_ll_usb.c] @2263
 	if (O_EP->DOEPCTL & USB_OTG_DOEPCTL_EPENA) { return; }
@@ -283,17 +352,17 @@ static inline void /**/ get_device_descriptor(USB_handle_t* handle, setup_header
 	case USB_STRING_DESCRIPTOR:
 		switch (req->value & 0xFFU) {
 		case USB_LANG_ID_STRING_DESCRIPTOR:
-			ptr = handle->lang_ID_string; break;
+			ptr = handle->descriptor->lang_ID_string; break;
 		case USB_MANUFACTURER_STRING_DESCRIPTOR:
-			ptr = handle->manufacturer_string; break;
+			ptr = handle->descriptor->manufacturer_string; break;
 		case USB_PRODUCT_STRING_DESCRIPTOR:
-			ptr = handle->product_string; break;
+			ptr = handle->descriptor->product_string; break;
 		case USB_SERIAL_STRING_DESCRIPTOR:
-			ptr = handle->serial_string; break;
+			ptr = handle->descriptor->serial_string; break;
 		case USB_CONFIG_STRING_DESCRIPTOR:
-			ptr = handle->configuration_string; break;
+			ptr = handle->descriptor->configuration_string; break;
 		case USB_INTERFACE_STRING_DESCRIPTOR:
-			ptr = handle->interface_string; break;
+			ptr = handle->descriptor->interface_string; break;
 		default:  // TODO: USER STR? @494 [usbd_ctlreq.c]
 			stall_EP(handle, 0);			// error
 			return;
@@ -539,10 +608,13 @@ static inline void /**/ USB_receive_packet_IRQ(USB_handle_t* handle) {
 
 	USB->GINTMSK &= ~USB_OTG_GINTMSK_RXFLVLM_Msk;	// note that RXFLVL is masked instead of cleared since that is not possible
 	GRXSTSR_t				RX_status; *((uint32_t*)&RX_status) = USB->GRXSTSR;
+	if (*((uint32_t*)&RX_status)) {
+		__NOP();
+	}
 	volatile uint32_t*		FIFO = (void*)(((uint32_t)USB) + USB_OTG_FIFO_BASE);
 	oep = handle->OEP[RX_status.EPNUM];
 
-	switch (RX_status.PKTSTS) {
+	switch (RX_status.PKTSTS) {  // TODO: PKTSTS: 12?
 	case 0b0010U:  // OUT data packet
 		if (!RX_status.BCNT) { break; }
 		const uint32_t	words = RX_status.BCNT >> 2U;
@@ -840,7 +912,10 @@ static /*  */ void /**/ USB_common_handler(USB_handle_t* handle) {
 	/* connector ID status change interrupt */
 	USB->GINTSTS = USB_OTG_GINTSTS_CIDSCHG;				// clear connector ID status change interrupt
 	/* connection event interrupt */
-	USB->GINTSTS = USB_OTG_GINTSTS_SRQINT;				// clear connection event interrupt TODO: create flag?
+	if (irqs & USB_OTG_GINTSTS_SRQINT) {
+		__NOP();
+	}
+	//USB->GINTSTS = USB_OTG_GINTSTS_SRQINT;				// clear connection event interrupt TODO: create flag?
 	/* wake-up interrupt */								// TODO: LPM?
 	USB->GINTSTS = USB_OTG_GINTSTS_WKUINT;				// clear wake-up interrupt
 }
@@ -852,9 +927,8 @@ static /*  */ void /**/ USB_common_handler(USB_handle_t* handle) {
 extern void OTG_HS_IRQHandler(void) { USB_common_handler(USB_handle[0]); }
 extern void OTG_FS_IRQHandler(void) { USB_common_handler(USB_handle[1]); }
 
-// TODO: ep0_data_len????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#endif // USB_LIB
 
-//const uint16_t	frame =	(DEV->DSTS >> USB_OTG_DSTS_FNSOF_Pos) & 0x3FFFUL;
 
 /// NOTES
 // from OTG_common_iep_handler -> XFRC

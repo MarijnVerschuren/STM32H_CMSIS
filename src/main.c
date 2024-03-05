@@ -127,6 +127,24 @@ int main(void) {
 	// start device
 	start_USB(USB2_OTG_FS);
 
+	uint8_t		test[0x22U];
+	uint8_t*	ptr = test;
+	ptr = write_descriptor(
+		ptr, USB_config_descriptor_type,
+		0x22U, 0x01U, 0x01U, 0x00U,
+		USB_bus_powered, 0x32U
+	);
+	ptr = write_descriptor(
+		ptr, USB_interface_descriptor_type,
+		0x00U, 0x00U, 0x01U, 0x03U, 0x01U,
+		0x01U, 0x00U
+	);
+	// TODO: HID keyboard class descriptor!!!!!!!!!!!!
+	(void)write_descriptor(
+		ptr, USB_endpoint_descriptor_type,
+		0x08U, 0x81U, EP_TYPE_INTERRUPT, 0x0AU
+	);
+	(void)test;
 	// Watchdog config (32kHz / (4 << prescaler))
 	//config_watchdog(0, 0xFFFUL);	// 1s
 	//start_watchdog();

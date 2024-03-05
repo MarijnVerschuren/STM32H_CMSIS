@@ -16,24 +16,6 @@
 #define DEVICE_CONFIG_SELF_POWERED			0x01U
 #define DEVICE_CONFIG_WAKE_HOST				0x02U
 
-#define USB_DEVICE_DESCRIPTOR				0x01U
-#define USB_CONFIGURATION_DESCRIPTOR		0x02U
-#define USB_STRING_DESCRIPTOR				0x03U
-#define USB_INTERFACE_DESCRIPTOR			0x04U
-#define USB_ENDPOINT_DESCRIPTOR				0x05U
-#define USB_QUALIFIER_DESCRIPTOR			0x06U
-#define USB_OTHER_SPEED_DESCRIPTOR			0x07U
-// #define USB_DEBUG_DESCRIPTOR				0x0AU
-#define USB_IAD_DESCRIPTOR					0x0BU
-#define USB_BOS_DESCRIPTOR					0x0FU
-
-#define USB_LANG_ID_STRING_DESCRIPTOR		0x00U
-#define USB_MANUFACTURER_STRING_DESCRIPTOR	0x01U
-#define USB_PRODUCT_STRING_DESCRIPTOR		0x02U
-#define USB_SERIAL_STRING_DESCRIPTOR		0x03U
-#define USB_CONFIG_STRING_DESCRIPTOR		0x04U
-#define USB_INTERFACE_STRING_DESCRIPTOR		0x05U
-
 #define inline __attribute__((always_inline))
 
 
@@ -343,32 +325,32 @@ static inline void /**/ get_device_descriptor(USB_handle_t* handle, setup_header
 
 	switch (req->value >> 8) {
 	// TODO: LPM / BOS?
-	case USB_DEVICE_DESCRIPTOR:
+	case USB_device_descriptor_type:
 		ptr = handle->descriptor; break;
-	case USB_CONFIGURATION_DESCRIPTOR:
+	case USB_config_descriptor_type:
 		handle->EP0_state = EP_DATA_IN;				// control data IN
 		IN_transfer(handle, 0, handle->class->descriptor, handle->class->descriptor_size);
 		break;
-	case USB_STRING_DESCRIPTOR:
+	case USB_string_descriptor_type:
 		switch (req->value & 0xFFU) {
-		case USB_LANG_ID_STRING_DESCRIPTOR:
+		case USB_language_ID_string_descriptor_type:
 			ptr = handle->descriptor->lang_ID_string; break;
-		case USB_MANUFACTURER_STRING_DESCRIPTOR:
+		case USB_manufacturer_string_descriptor_type:
 			ptr = handle->descriptor->manufacturer_string; break;
-		case USB_PRODUCT_STRING_DESCRIPTOR:
+		case USB_product_string_descriptor_type:
 			ptr = handle->descriptor->product_string; break;
-		case USB_SERIAL_STRING_DESCRIPTOR:
+		case USB_serial_string_descriptor_type:
 			ptr = handle->descriptor->serial_string; break;
-		case USB_CONFIG_STRING_DESCRIPTOR:
+		case USB_config_string_descriptor_type:
 			ptr = handle->descriptor->configuration_string; break;
-		case USB_INTERFACE_STRING_DESCRIPTOR:
+		case USB_interface_string_descriptor_type:
 			ptr = handle->descriptor->interface_string; break;
 		default:  // TODO: USER STR? @494 [usbd_ctlreq.c]
 			stall_EP(handle, 0);			// error
 			return;
 		} break;
-	case USB_QUALIFIER_DESCRIPTOR:		// TODO: HS?
-	case USB_OTHER_SPEED_DESCRIPTOR:	// TODO: HS?
+	case USB_qualifier_descriptor_type:		// TODO: HS?
+	case USB_other_speed_descriptor_type:	// TODO: HS?
 	default:
 		stall_EP(handle, 0);					// error
 		return;

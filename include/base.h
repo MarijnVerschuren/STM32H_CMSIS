@@ -62,11 +62,18 @@ void* pin_to_dev(dev_pin_t pin);
 
 uint8_t dev_to_int(void* dev);
 
+
 /*!<
  * buffer
  * */
 io_buffer_t* new_buffer(uint32_t size);
 void free_buffer(io_buffer_t* buf);
+
+
+/*!<
+ * string
+ * */
+uint32_t strlen(const char* str);
 
 
 #endif //STM32H_CMSIS_BASE_H

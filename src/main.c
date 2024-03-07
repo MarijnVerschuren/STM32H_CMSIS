@@ -19,15 +19,17 @@ SYS_CLK_Config_t* sys_config;
 
 extern void TIM8_UP_TIM13_IRQHandler(void) {
 	TIM8->SR &= ~TIM_SR_UIF;  // clear interrupt flag
-    GPIO_toggle(GPIOA, 1);
+	GPIO_toggle(GPIOA, 1);
 }
 
 extern void EXTI3_IRQHandler(void) {	// button K1
 	EXTI->PR1 |= EXTI_PR1_PR3;  // clear interrupt flag
+	start_TIM(TIM8);
 }
 
 extern void EXTI9_5_IRQHandler(void) {	// button K2
 	EXTI->PR1 |= EXTI_PR1_PR5;  // clear interrupt flag
+	stop_TIM(TIM8);
 }
 
 
@@ -73,7 +75,7 @@ int main(void) {
 			TIM_MUL_2, HRTIM_SRC_CPU, LPTIM_CLK_SRC_APBx,
 			LPTIM_CLK_SRC_APBx, LPTIM_CLK_SRC_APBx
 	);
-	config_TIM(TIM8, TIM_APB2_kernel_frequency / 10000, 10000);  // 1 Hz
+	config_TIM(TIM8, TIM_APB2_kernel_frequency / 10000, 1000);  // 10 Hz
 	start_TIM_update_irq(TIM8);
 	start_TIM(TIM8);
 
@@ -122,40 +124,70 @@ int main(void) {
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
 	USB2_OTG_FS->CID = 0x4D2E562EUL; // set CID to "M.V." for fun :)
-	// config interfaces
-	config_USB_interface(USB2_OTG_FS);  // TODO!!!!!!!!!!!!!!!! (alwasys composite)
+	// config interfaces  TODO: redo structure!!!!!
+	USB_handle_t* handle = fconfig_USB_handle(USB2_OTG_FS, USB_CLASS_HID_KEYBOARD, 1U, 0U, HID_KEYBOARD_DESCRIPTOR_SIZE);
 	// start device
-	start_USB(USB2_OTG_FS);
 
-	uint8_t		test[0x22U];
-	uint8_t*	ptr = test;
-	ptr = write_descriptor(
-		ptr, USB_config_descriptor_type,
+	(void)write_descriptor(
+	write_HID_descriptor(
+	write_descriptor(
+	write_descriptor(
+		handle->class->descriptor,
+		USB_config_descriptor_type,
 		0x22U, 0x01U, 0x01U, 0x00U,
 		USB_bus_powered, 0x32U
-	);
-	ptr = write_descriptor(
-		ptr, USB_interface_descriptor_type,
+	),
+		USB_interface_descriptor_type,
 		0x00U, 0x00U, 0x01U, 0x03U, 0x01U,
-		0x01U, 0x00U
-	);
-	// TODO: HID keyboard class descriptor!!!!!!!!!!!!
-	(void)write_descriptor(
-		ptr, USB_endpoint_descriptor_type,
+		0x01U,			// interface protocol
+		0x00U
+	),
+		0x0111U,
+		0x00,
+		HID_KEYBOARD_REPORT_DESCRIPTOR_SIZE
+	),
+		USB_endpoint_descriptor_type,
 		0x08U, 0x81U, EP_TYPE_INTERRUPT, 0x0AU
 	);
-	(void)test;
+
+	(void)write_descriptor(
+		handle->descriptor->device,
+		USB_device_descriptor_type,
+		0x2000U,		// USB 2.0
+		0x03U,			// HID TODO: define
+		0x00U,			// no subclasss
+		0x01U,			// device protocol set to the same as inteface TODO: valid??
+		64U,			// EP0_MPS TODO: define
+		0x0000,			// vendor ID
+		0x0000,			// product ID
+		0x2000,			// device version (USB 2.0??) TODO: valid?
+		0x1U,			// manufacturer string index
+		0x2U,			// product string index
+		0x3U,			// serial string index
+		0x1U			// config count
+	);
+
+	handle->descriptor->lang_ID_string = create_string_descriptor("NL");
+	handle->descriptor->manufacturer_string = create_string_descriptor("Marijn");
+	handle->descriptor->product_string = create_string_descriptor("Keyboard");
+	handle->descriptor->serial_string = create_string_descriptor("fb49484a-ce2a-466e-aded-073dab3a483b");
+	handle->descriptor->configuration_string = create_string_descriptor("");
+	handle->descriptor->interface_string = create_string_descriptor("");
+
+	start_USB(USB2_OTG_FS);
+
 	// Watchdog config (32kHz / (4 << prescaler))
 	//config_watchdog(0, 0xFFFUL);	// 1s
 	//start_watchdog();
 
 
 	// main loop
-    for(;;) {
+	for(;;) {
 		//TIM1->CCR1 = (TIM1->CCR1 + 100) % 20000;
 		//UART_print(USART1, "Hello World!\n", 100);
 		//reset_watchdog();
-		delay_ms(100);
+		//delay_ms(100);
+		__NOP();
 	}
 
 

@@ -319,14 +319,14 @@ static inline void /**/ data_OUT_stage(USB_handle_t* handle, uint8_t ep_num) {
 	}
 }
 
-/* setup stage logic */  // TODO: check functions (low priority)
+/* setup stage logic */  // TODO: check functions
 static inline void /**/ get_device_descriptor(USB_handle_t* handle, setup_header_t* req) {
 	uint8_t* ptr = NULL;
 
 	switch (req->value >> 8) {
 	// TODO: LPM / BOS?
 	case USB_device_descriptor_type:
-		ptr = handle->descriptor; break;
+		ptr = handle->descriptor->device; break;
 	case USB_config_descriptor_type:
 		handle->EP0_state = EP_DATA_IN;				// control data IN
 		IN_transfer(handle, 0, handle->class->descriptor, handle->class->descriptor_size);
@@ -589,11 +589,11 @@ static inline void /**/ USB_receive_packet_IRQ(USB_handle_t* handle) {
 	USB_OEP_t*		oep;
 
 	USB->GINTMSK &= ~USB_OTG_GINTMSK_RXFLVLM_Msk;	// note that RXFLVL is masked instead of cleared since that is not possible
-	GRXSTSR_t				RX_status; *((uint32_t*)&RX_status) = USB->GRXSTSR;
+	GRXSTSR_t RX_status; *((uint32_t*)&RX_status) = USB->GRXSTSR;
 	if (*((uint32_t*)&RX_status)) {
 		__NOP();
 	}
-	volatile uint32_t*		FIFO = (void*)(((uint32_t)USB) + USB_OTG_FIFO_BASE);
+	volatile uint32_t* FIFO = (void*)(((uint32_t)USB) + USB_OTG_FIFO_BASE);
 	oep = handle->OEP[RX_status.EPNUM];
 
 	switch (RX_status.PKTSTS) {  // TODO: PKTSTS: 12?

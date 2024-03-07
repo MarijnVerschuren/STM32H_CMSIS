@@ -77,8 +77,8 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size) 
 	if (dp_usb != dn_usb) { return; }  // error if devices do not match up
 
 	/* GPIO config */
-	fconfig_GPIO(dp_port, dp_pin.num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dp_pin.alt);
-	fconfig_GPIO(dn_port, dn_pin.num, GPIO_alt_func, GPIO_pull_up, GPIO_open_drain, GPIO_high_speed, dn_pin.alt);
+	fconfig_GPIO(dp_port, dp_pin.num, GPIO_alt_func, GPIO_no_pull, GPIO_open_drain, GPIO_high_speed, dp_pin.alt);
+	fconfig_GPIO(dn_port, dn_pin.num, GPIO_alt_func, GPIO_no_pull, GPIO_open_drain, GPIO_high_speed, dn_pin.alt);
 
 	/* enable USB device clock and global interrupt */
 	enable_id(dp_pin.id);
@@ -217,60 +217,6 @@ void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size) {
 			offset
 		);	offset += block_size;
 	}
-}
-
-
-void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb, USB_descriptor_t* descriptor, USB_class_t* class) {
-	uint8_t						handle_index =	((uint32_t)usb >> 0x13UL) & 0b1UL;
-	USB_handle_t				*handle =		USB_handle[handle_index];
-	USB_OTG_DeviceTypeDef		*device =		(void*)((uint32_t)usb + 0x800);
-	USB_OTG_INEndpointTypeDef	*in =			(void*)((uint32_t)usb + 0x900);
-	USB_OTG_OUTEndpointTypeDef	*out =			(void*)((uint32_t)usb + 0xB00);
-	if (!handle) {  // create status if not available
-		USB_handle[handle_index] = handle = malloc(sizeof(USB_handle_t));
-	}
-
-	handle->usb =		usb;
-	handle->device =	device;
-	USB_IEP_t* iep; USB_OEP_t* oep;
- 	for (uint8_t i = 0; i < USB_OTG_ENDPOINT_COUNT; i++) {
-		handle->IEP[i] = iep = malloc(sizeof(USB_IEP_t));
- 		iep->mps = iep->size = iep->count =	0x00000000UL;
- 		iep->type = iep->stall = iep->used =		0b0U;
- 		iep->ep =		&in[i]; iep->src =			NULL;
- 		handle->OEP[i] = oep = malloc(sizeof(USB_OEP_t));
- 		oep->mps = oep->size = oep->count =	0x00000000UL;
- 		oep->type = oep->stall = oep->used =		0b0U;
- 		oep->ep =		&out[i]; oep->dest =		NULL;
- 	}
-
-	handle->descriptor =	descriptor;
-	handle->class =			class;
-
-
-
-	// TODO: keep track of configuration, interface classes and enpoint behavior
-	// TODO: make a general purpose class init funciton within USB.h/c
-
-
-	/* HAL USB Device descriptors structure
-	typedef struct
-	{
-		uint8_t *(*GetDeviceDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		uint8_t *(*GetLangIDStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		uint8_t *(*GetManufacturerStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		uint8_t *(*GetProductStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		uint8_t *(*GetSerialStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		uint8_t *(*GetConfigurationStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		uint8_t *(*GetInterfaceStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-		#if (USBD_CLASS_USER_STRING_DESC == 1)
-		uint8_t *(*GetUserStrDescriptor)(USBD_SpeedTypeDef speed, uint8_t idx, uint16_t *length);
-		#endif /* USBD_CLASS_USER_STRING_DESC
-	} USBD_DescriptorsTypeDef;
-	*/
-}
-void config_USB_interface(USB_OTG_GlobalTypeDef* usb) {
-	fconfig_USB_interface(usb, NULL, NULL);
 }
 
 

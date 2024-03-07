@@ -94,3 +94,13 @@ io_buffer_t* new_buffer(uint32_t size) {
 	return buf;
 }
 void free_buffer(io_buffer_t* buf) { free(buf->ptr); free(buf); }
+
+
+/*!<
+ * string
+ * */
+uint32_t strlen(const char* str) {
+	register uint32_t len = 0;
+	while (*str++) { len++; }
+	return len;
+}

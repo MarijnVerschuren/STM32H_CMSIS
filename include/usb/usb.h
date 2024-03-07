@@ -109,6 +109,21 @@ typedef enum {
 	USB_self_powered =	0xE0U
 } USB_power_type_t;
 
+#define HID_DESCRIPTOR_TYPE						0x21U
+#define HID_REPORT_DESCRIPTOR_TYPE				0x22U
+
+#define HID_DESCRIPTOR_SIZE						0x9U
+
+/*!< keyboard */
+#define HID_KEYBOARD_MPS						0x08U
+#define HID_KEYBOARD_INTERVAL					0x0AU
+
+// TODO: always the case??
+#define HID_KEYBOARD_DESCRIPTOR_SIZE			0x22U	/* 34 */
+#define HID_KEYBOARD_REPORT_DESCRIPTOR_SIZE		0xBBU	/* 187 */
+
+
+
 
 /*!<
  * variables
@@ -125,11 +140,14 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size);
 void config_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn);
 // TODO: external phy, host mode
 
-void fconfig_USB_interface(USB_OTG_GlobalTypeDef* usb, USB_descriptor_t* descriptor, USB_class_t* class);
-void config_USB_interface(USB_OTG_GlobalTypeDef* usb);
+// TODO:
+USB_handle_t* fconfig_USB_handle(USB_OTG_GlobalTypeDef* usb, USB_class_type_t class_type, uint8_t iep_num, uint8_t oep_num, uint32_t descriptor_size);
 
-USB_class_t* init_class(USB_handle_t* handle, USB_class_type_t class_type, uint8_t iep_num, uint8_t oep_num);
+/*!< descriptors */
+void* create_descriptor(uint32_t size);
+void* create_string_descriptor(void* str);  // TODO: w_string?
 void* write_descriptor(void* ptr, USB_descriptor_type_t type, ...);
+void* write_HID_descriptor(void* ptr, uint16_t release_number, uint8_t country_code, uint16_t HID_report_size);
 
 void config_USB_RX_FIFO(USB_OTG_GlobalTypeDef* usb, uint32_t size);
 void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size);

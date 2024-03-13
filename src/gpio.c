@@ -41,7 +41,7 @@ void config_GPIO(GPIO_TypeDef* port, uint8_t pin, GPIO_MODE_t mode, GPIO_PULL_t 
  * output
  * */
 void GPIO_write(GPIO_TypeDef* port, uint8_t pin, uint8_t data) {
-	port->BSRR |= ((data ? 0x1UL: 0x100UL) << pin);
+	port->BSRR |= ((data ? 0x1UL: 0x10000UL) << pin);
 }
 void GPIO_toggle(GPIO_TypeDef* port, uint8_t pin) {
 	port->ODR ^= (0b1UL << pin);

@@ -6,6 +6,22 @@
 #define STM32H_CMSIS_BASE_H
 #include "main.h"
 
+#define DEBUG
+/*!<
+ * defines
+ */
+#ifdef DEBUG
+/*<! debug barrier:
+ * used as a recognizable marker for places where the software waits on the hardware when emulating
+ * the emulator will search for the compiled version code of the barrier:
+ * thumb: "\xff\x46\xff\x46", arm: "\x0f\xf0\xa0\xe1\x0f\xf0\xa0\xe1"
+ * and enact the appropriate actions at the found location
+ */
+#define DBAR() asm volatile("mov pc, pc\n\tmov pc, pc")
+#else
+#define DBAR()
+#endif
+__attribute__((arm))
 
 /*!<
  * device types

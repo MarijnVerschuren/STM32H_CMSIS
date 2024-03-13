@@ -101,11 +101,11 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size) 
 		USB_OTG_GUSBCFG_FDMOD	|							// force device device mode
 		USB_OTG_GUSBCFG_PHYSEL								// select internal PHY
 	);
-	while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
+	DBAR(); while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
 
-	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	DBAR(); while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
 	usb->GRSTCTL |= USB_OTG_GRSTCTL_CSRST;					// reset the core
-	while (usb->GRSTCTL & USB_OTG_GRSTCTL_CSRST);			// wait until reset is processed
+	DBAR(); while (usb->GRSTCTL & USB_OTG_GRSTCTL_CSRST);			// wait until reset is processed
 
 	usb->GCCFG = (
 		USB_OTG_GCCFG_VBDEN		|							// enable Vbus detection

@@ -1,6 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="dev_pin_hex" type="PythonConfigurationType" factoryName="Python" singleton="false" nameIsGenerated="true">
+  <configuration default="false" name="dev_pin_hex" type="PythonConfigurationType" factoryName="Python" folderName="helpers" singleton="false" nameIsGenerated="true">
     <module name="STM32H_CMSIS" />
+    <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

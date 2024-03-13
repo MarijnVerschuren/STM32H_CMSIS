@@ -111,43 +111,43 @@ typedef struct {
 }	USB_descriptor_t;
 
 typedef struct {
-	SETUP_recipiant_t			recipiant	: 5;		// |
-	SETUP_request_type_t		type		: 2;		// | bmRequest
-	uint8_t						direction	: 1;		// |  // TODO: MSB?!!!!!!!!!!!!!!!!!!
-	SETUP_command_t				command;				// bRequest
-	uint16_t					value;					// wValue
-	uint16_t					index;					// wIndex
-	uint16_t					length;					// wLength
+	SETUP_recipiant_t		    recipiant	: 5;		// |
+	SETUP_request_type_t	    type		: 2;		// | bmRequest
+	uint8_t					    direction	: 1;		// |  // TODO: MSB?!!!!!!!!!!!!!!!!!!
+	SETUP_command_t			    command;				// bRequest
+	uint16_t				    value;					// wValue
+	uint16_t				    index;					// wIndex
+	uint16_t				    length;					// wLength
 }	setup_header_t;
 
 typedef struct {
 	USB_OTG_INEndpointTypeDef*	ep;
 
-	uint32_t					mps;					// max packet size
+	volatile uint32_t			mps;					// max packet size
 
-	void*						src;					// TX buffer source (buffer + count)
-	uint32_t					size;					// to send
-	uint32_t					count;					// sent
+	volatile void*				src;					// TX buffer source (buffer + count)
+	volatile uint32_t			size;					// to send
+	volatile uint32_t			count;					// sent
 
 	// TODO: consider saving epnum
-	uint8_t						type	: 2;			// endpoint type
-	uint8_t						stall	: 1;			// stall condition
-	uint8_t						used	: 1;
+	volatile uint8_t			type	: 2;			// endpoint type
+	volatile uint8_t			stall	: 1;			// stall condition
+	volatile uint8_t			used	: 1;
 }	USB_IEP_t;
 
 typedef struct {
 	USB_OTG_OUTEndpointTypeDef*	ep;
 
-	uint32_t					mps;					// max packet size
+	volatile uint32_t			mps;					// max packet size
 
-	void*						dest;					// RX buffer destination (buffer + count)
-	uint32_t					size;					// RX buffer size
-	uint32_t					count;					// received
+	volatile void*				dest;					// RX buffer destination (buffer + count)
+	volatile uint32_t			size;					// RX buffer size
+	volatile uint32_t			count;					// received
 
 	// TODO: consider saving epnum
-	uint8_t						type	: 2;			// endpoint type
-	uint8_t						stall	: 1;			// stall condition
-	uint8_t						used	: 1;
+	volatile uint8_t			type	: 2;			// endpoint type
+	volatile uint8_t			stall	: 1;			// stall condition
+	volatile uint8_t			used	: 1;
 }	USB_OEP_t;
 
 typedef struct {
@@ -160,15 +160,15 @@ typedef struct {
 	USB_IEP_t*					IEP[16];
 	USB_OEP_t*					OEP[16];
 	// setup variables
-	uint32_t					setup[16];				// max controll stage data size: 64B TODO: HAL has 12???
-	setup_header_t				request;				// TODO: in struct??
+	volatile uint32_t			setup[16];				// max controll stage data size: 64B TODO: HAL has 12???
+	volatile setup_header_t		request;				// TODO: in struct??
 	// states and (volatile) settings
-	USB_state_t					state		: 2;
-	EP_state_t					EP0_state	: 3;
-	uint16_t					address		: 7;
-	uint16_t					class_init	: 1;
-	uint32_t					EP0_data;
-	uint8_t						device_config;			// response sent on GET_STATUS request
+	volatile USB_state_t		state		: 2;
+	volatile EP_state_t			EP0_state	: 3;
+	volatile uint16_t			address		: 7;
+	volatile uint16_t			class_init	: 1;
+	volatile uint32_t			EP0_data;
+	volatile uint8_t			device_config;			// response sent on GET_STATUS request
 }	USB_handle_t;
 
 

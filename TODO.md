@@ -1,5 +1,6 @@
 # TODO
 >### Very High Priority
+>* STM32H7B0 !!!! very low power
 
 >### High Priority
 >* I2C slave mode

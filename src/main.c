@@ -24,12 +24,14 @@ extern void TIM8_UP_TIM13_IRQHandler(void) {
 
 extern void EXTI3_IRQHandler(void) {	// button K1
 	EXTI->PR1 |= EXTI_PR1_PR3;  // clear interrupt flag
-	start_TIM(TIM8);
+	//start_TIM(TIM8);
+	GPIO_write(GPIOA, 1, 0);
 }
 
 extern void EXTI9_5_IRQHandler(void) {	// button K2
 	EXTI->PR1 |= EXTI_PR1_PR5;  // clear interrupt flag
-	stop_TIM(TIM8);
+	//stop_TIM(TIM8);
+	GPIO_write(GPIOA, 1, 1);
 }
 
 
@@ -69,35 +71,36 @@ int main(void) {
 			sys_config, 1, 1, SYSTICK_CLK_SRC_AXI_CLK_DIV_1	// SysTick (IRQ) enable at 200MHz
 	);
 	sys_clock_init(sys_config);
-
 	/* TIM config */
-	config_TIM_kernel_clocks(
+	/*config_TIM_kernel_clocks(
 			TIM_MUL_2, HRTIM_SRC_CPU, LPTIM_CLK_SRC_APBx,
 			LPTIM_CLK_SRC_APBx, LPTIM_CLK_SRC_APBx
 	);
 	config_TIM(TIM8, TIM_APB2_kernel_frequency / 10000, 1000);  // 10 Hz
 	start_TIM_update_irq(TIM8);
 	start_TIM(TIM8);
+	*/
 
 	/* GPIO config */
-	config_GPIO(GPIOA, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);	// user led D2
+	/*config_GPIO(GPIOA, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);	// user led D2
 	config_GPIO(GPIOE, 3, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K1
 	config_GPIO(GPIOC, 5, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K2
+	GPIO_write(GPIOA, 1, 1);*/
 
 	/* EXTI config */
-	config_EXTI(3, GPIOE, 1, 1);
-	config_EXTI(5, GPIOC, 1, 1);
-	start_EXTI(3); start_EXTI(5);
+	/*config_EXTI(3, GPIOE, 1, 1);	start_EXTI(3);
+	config_EXTI(5, GPIOC, 1, 1);	start_EXTI(5);*/
 
 	/* MCO config */
-	config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);  // 400 MHz
-
+	/*config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);  // 400 MHz
+	*/
 	/* PWM config */
-	config_PWM(TIM1_CH1_A8, TIM_APB2_kernel_frequency / 1000000, 20000);  // 50Hz
+	/*config_PWM(TIM1_CH1_A8, TIM_APB2_kernel_frequency / 1000000, 20000);  // 50Hz
+	*/
 
 	/* CRC config */
-	config_CRC();
-
+	/*config_CRC();
+	*/
 	/* HASH config */
 	// TODO: [3]
 
@@ -105,20 +108,24 @@ int main(void) {
 	// TODO: [4]
 
 	/* RNG config */
-	config_RNG_kernel_clock(RNG_CLK_SRC_PLL1_Q);  // 200 MHz
+	/*config_RNG_kernel_clock(RNG_CLK_SRC_PLL1_Q);  // 200 MHz
+	*/
 	// TODO: [5]
 
 	/* UART config */
+	/*
 	config_USART_kernel_clocks(USART_CLK_SRC_APBx, USART_CLK_SRC_APBx, USART_CLK_SRC_APBx);
 	config_UART(USART1_TX_A9, USART1_RX_A10, 115200, 1);
+	*/
 
 	/* I2C config */
-	config_I2C_kernel_clocks(I2C_CLK_SRC_APBx, I2C_CLK_SRC_APBx);
+	/*config_I2C_kernel_clocks(I2C_CLK_SRC_APBx, I2C_CLK_SRC_APBx);
 	I2C_setting_t I2C_setting = {  // 100 KHz
 			APB1_clock_frequency / 4000000,
 			0x13UL, 0x0FU, 2, 4
 	};
 	config_I2C(I2C1_SCL_B6, I2C1_SDA_B7, I2C_setting, 0x50);
+	*/
 
 	/* USB config */
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
@@ -127,7 +134,6 @@ int main(void) {
 	// config interfaces  TODO: redo structure!!!!!
 	USB_handle_t* handle = fconfig_USB_handle(USB2_OTG_FS, USB_CLASS_HID_KEYBOARD, 1U, 0U, HID_KEYBOARD_DESCRIPTOR_SIZE);
 	// start device
-
 	(void)write_descriptor(
 	write_HID_descriptor(
 	write_descriptor(
@@ -179,7 +185,6 @@ int main(void) {
 	// Watchdog config (32kHz / (4 << prescaler))
 	//config_watchdog(0, 0xFFFUL);	// 1s
 	//start_watchdog();
-
 
 	// main loop
 	for(;;) {

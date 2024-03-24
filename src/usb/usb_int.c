@@ -589,10 +589,9 @@ static inline void /**/ USB_receive_packet_IRQ(USB_handle_t* handle) {
 	USB_OEP_t*		oep;
 
 	USB->GINTMSK &= ~USB_OTG_GINTMSK_RXFLVLM_Msk;	// note that RXFLVL is masked instead of cleared since that is not possible
-	GRXSTSR_t RX_status; *((uint32_t*)&RX_status) = USB->GRXSTSR;
-	if (*((uint32_t*)&RX_status)) {
-		__NOP();
-	}
+	uint32_t a = USB->GRXSTSR;
+	if (a) { GPIO_write(GPIOA, 1, 0); }
+	GRXSTSR_t RX_status; *((uint32_t*)&RX_status) = a;
 	volatile uint32_t* FIFO = (void*)(((uint32_t)USB) + USB_OTG_FIFO_BASE);
 	oep = handle->OEP[RX_status.EPNUM];
 
@@ -829,7 +828,6 @@ static inline void /**/ OEP_common_handler(USB_handle_t* handle, uint8_t ep_num)
 	O_EP->DOEPINT = USB_OTG_DOEPINT_STPKTRX;			// clear setup packet received interrupt
 }
 static /*  */ void /**/ USB_common_handler(USB_handle_t* handle) {
-	GPIO_write(GPIOA, 1, 0);
 	const uint32_t	irqs = USB->GINTSTS & USB->GINTMSK;
 	if (!irqs) {  // TODO why was this interrupt triggered if no unmasked interrupts are triggered??? NEEDED??
 		USB->GINTSTS = USB->GINTSTS;  // clear the masked interrupts

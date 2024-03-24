@@ -90,7 +90,7 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size) 
 
 	/* power config */
 	PWR->CR3 |= (
-		PWR_CR3_USBREGEN	|	// TODO: needed?
+		//PWR_CR3_USBREGEN	|	// TODO: needed?
 		PWR_CR3_USB33DEN	|
 		PWR_CR3_SCUEN		|
 		PWR_CR3_LDOEN
@@ -99,16 +99,17 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size) 
 	/* phy and mode config */
 	usb->GUSBCFG = (
 		USB_OTG_GUSBCFG_FDMOD	|							// force device device mode
-		USB_OTG_GUSBCFG_PHYSEL								// select internal PHY
+		USB_OTG_GUSBCFG_PHYSEL	|							// select internal PHY
+		USB_OTG_GUSBCFG_HNPCAP	|	// ?
+		USB_OTG_GUSBCFG_SRPCAP		// ?
 	);
-	DBAR(); while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
-
-	DBAR(); while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
+	while (usb->GINTSTS & USB_OTG_GINTSTS_CMOD);			// wait until device mode is set
+	while (!(usb->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL));		// wait for AHB master IDLE state
 	usb->GRSTCTL |= USB_OTG_GRSTCTL_CSRST;					// reset the core
-	DBAR(); while (usb->GRSTCTL & USB_OTG_GRSTCTL_CSRST);			// wait until reset is processed
+	while (usb->GRSTCTL & USB_OTG_GRSTCTL_CSRST);			// wait until reset is processed
 
 	usb->GCCFG = (
-		USB_OTG_GCCFG_VBDEN		|							// enable Vbus detection
+		//USB_OTG_GCCFG_VBDEN		|							// enable Vbus detection
 		USB_OTG_GCCFG_PWRDWN								// power up internal PHY transceiver
 	);
 
@@ -116,7 +117,8 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size) 
 
 	device->DCFG = (
 		0b00UL << USB_OTG_DCFG_PFIVL_Pos			|		// 80% (TODO: try 90%)
-		0b11UL << USB_OTG_DCFG_DSPD_Pos						// FS on internal PHY
+		0b11UL << USB_OTG_DCFG_DSPD_Pos				|		// FS on internal PHY
+		USB_OTG_DCFG_NZLSOHSK	// ?
 	);
 
 	/* FIFO buffer setup */
@@ -155,12 +157,13 @@ void fconfig_USB_FS_device(USB_GPIO_t dp, USB_GPIO_t dn, uint32_t RX_FIFO_size) 
 		USB_OTG_GINTMSK_WUIM			|					// resume / remote wake-up detected interrupt
 		USB_OTG_GINTMSK_SRQIM			|					// session request / new session detected interrupt
 		USB_OTG_GINTMSK_DISCINT			|					// disconnect detected interrupt
-		USB_OTG_GINTMSK_PXFRM_IISOOXFRM	|					// incomplete periodic transfer interrupt / incomplete isochronous OUT transfer interrupt
-		USB_OTG_GINTMSK_IISOIXFRM		|					// incomplete isochronous IN transfer interrupt
+		//USB_OTG_GINTMSK_PXFRM_IISOOXFRM	|				// incomplete periodic transfer interrupt / incomplete isochronous OUT transfer interrupt
+		//USB_OTG_GINTMSK_IISOIXFRM		|					// incomplete isochronous IN transfer interrupt
 		USB_OTG_GINTMSK_OEPINT			|					// OUT endpoints interrupt
 		USB_OTG_GINTMSK_IEPINT			|					// IN endpoints interrupt
 		USB_OTG_GINTMSK_ENUMDNEM		|					// enumeration done interrupt
 		USB_OTG_GINTMSK_USBRST			|					// USB reset interrupt
+		USB_OTG_GINTMSK_ESUSPM			|					// USB early suspend interrupt
 		USB_OTG_GINTMSK_USBSUSPM		|					// USB suspend interrupt
 		USB_OTG_GINTMSK_RXFLVLM			|					// RX FIFO non empty interrupt
 		USB_OTG_GINTMSK_SOFM			|					// start of frame interrupt
@@ -221,15 +224,16 @@ void config_USB_TX_FIFO(USB_OTG_GlobalTypeDef* usb, uint8_t ep, uint32_t size) {
 
 
 void start_USB(USB_OTG_GlobalTypeDef* usb) {
-	register USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
-	register volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
+	USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
+	volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
 	usb->GAHBCFG |= USB_OTG_GAHBCFG_GINT;
+	(void)usb->GRXSTSP;  // pop status register
 	*PCGCCTL &= ~(USB_OTG_PCGCCTL_STOPCLK | USB_OTG_PCGCCTL_GATECLK);
 	device->DCTL &= ~USB_OTG_DCTL_SDIS;
 }
 void stop_USB(USB_OTG_GlobalTypeDef* usb) {
-	register USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
-	register volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
+	USB_OTG_DeviceTypeDef	*device =	(void*)((uint32_t)usb + 0x800);
+	volatile uint32_t		*PCGCCTL =	(void*)((uint32_t)usb + 0xE00);
 	usb->GAHBCFG &= ~USB_OTG_GAHBCFG_GINT;
 	*PCGCCTL &= ~(USB_OTG_PCGCCTL_STOPCLK | USB_OTG_PCGCCTL_GATECLK);
 	device->DCTL |= USB_OTG_DCTL_SDIS;

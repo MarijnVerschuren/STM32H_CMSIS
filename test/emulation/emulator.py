@@ -59,6 +59,9 @@ class SET():
 		self.address =	address
 		self.data =		data
 	
+	def __str__(self):	return f"<SET: {hex(self.address)} to 0x{self.data.hex()}>"
+	def __repr__(self):	return str(self)
+	
 	def run(self, emu, *args, **kwargs):
 		emu.mem_write(self.address, self.data)
 		
@@ -66,6 +69,9 @@ class SET():
 class SKIP():
 	def __init__(self, f_name):
 		self.f_name = f_name
+	
+	def __str__(self):	return f"<SKIP: {self.f_name}>"
+	def __repr__(self):	return str(self)
 	
 	def run(self, emu, *args, user_data, **kwargs):
 		address, size = [(a, s) for a, s, n in user_data["functions"] if n == self.f_name][0]
@@ -92,8 +98,8 @@ DBAR_ACTIONS = {
 	"sys_clock_init_6": SET(0x58024474, word(SYS_CONFIG["LSI_enable"] << 1)),		# RCC->CSR & RCC_CSR_LSIRDY
 	"sys_clock_init_7": SET(0x58024470, word(SYS_CONFIG["LSE_enable"] << 1)),		# RCC->BDCR & RCC_BDCR_LSERDY
 
-	"enable_id_0" : SKIP("enable_id")	# skip the function containing the barrier
-}  # TODO: USB DBAR's
+	"enable_id_0" : SKIP("enable_id"),	# skip the function containing the barrier
+}
 
 
 # hooks
@@ -111,10 +117,12 @@ def memory_write_hook(emu, access, address, size, value, user_data):
 	
 
 def code_hook(emu, address, size, user_data):
+	for f_address, s, f_name in functions[::-1]:
+		if f_address < address: break
 	opcode =	emu.mem_read(address, size)
 	mnemonics =	asm.disasm(opcode, address)
 	for i in mnemonics:
-		print(f"{hex(i.address)}: {i.mnemonic}\t{i.op_str}")
+		print(f"{hex(i.address)} ({f_name} + {hex(address - f_address)}): {i.mnemonic}\t{i.op_str}")
 
 def interrupt_hook(emu, address, size, user_data):
 	print("interrupt")
@@ -143,7 +151,7 @@ if __name__ == "__main__":
 		except	KeyboardInterrupt: sys.exit(0)
 		except:	pass
 		
-	os.system(f"pio run -e {env}")
+	os.system(f"pio debug -e {env}")
 	os.system(f"cp ./.pio/build/{env}/firmware.bin ./test/emulation/{env}.bin")
 	os.system(f"cp ./.pio/build/{env}/firmware.elf ./test/emulation/{env}.elf")
 	os.chdir(dir_name(__file__))
@@ -174,6 +182,8 @@ if __name__ == "__main__":
 			if addr > f_address:
 				barriers.update({addr: (f_name, bar_cnt)})
 				bar_cnt += 1; bars.remove(addr)
+	
+	input(functions)
 	
 	# setup memory map and code loading
 	emu.mem_map(FLASH_0, FLASH_1 - FLASH_0)			# map flash memory
@@ -216,3 +226,5 @@ if __name__ == "__main__":
 	
 	# dump machine state TODO
 	
+	# TODO: move to ARM_emulator project and develop there
+	# TODO: git submodule

@@ -175,11 +175,11 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	uint32_t clock_ready_mask;
 	uint32_t tmp_reg;
 	//!< check if current VOS level is stable
-	DBAR(); while (!(PWR->D3CR & PWR_D3CR_VOSRDY));
+	while (!(PWR->D3CR & PWR_D3CR_VOSRDY));
 	//!< configure CORE voltage scaling
 	PWR->CR3 |= PWR_CR3_BYPASS;
 	PWR->D3CR |= (config->CORE_VOS_level << PWR_D3CR_VOS_Pos);
-	DBAR(); while ((PWR->CSR1 & PWR_CSR1_ACTVOS) != (config->CORE_VOS_level << PWR_CSR1_ACTVOS_Pos));  // wait until the power scaling level is applied
+	while ((PWR->CSR1 & PWR_CSR1_ACTVOS) != (config->CORE_VOS_level << PWR_CSR1_ACTVOS_Pos));  // wait until the power scaling level is applied
 	//!< enable and config base clocks
 	RCC->CR = (  // HSI is left on
 		// enable clocks
@@ -199,9 +199,9 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 		(config->HSI48_enable << RCC_CR_HSI48RDY_Pos)					|
 		(config->HSE_CSS_enable << RCC_CR_CSSHSEON_Pos)
 	);
-	DBAR(); while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled basic clocks are ready
+	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled basic clocks are ready
 	RCC->CR |= config->HSI_div << RCC_CR_HSIDIV_Pos;
-	DBAR(); while (!(RCC->CR & RCC_CR_HSIDIVF));						// wait until HSI div is applied
+	while (!(RCC->CR & RCC_CR_HSIDIVF));						// wait until HSI div is applied
 	//!< update base clock frequency variables
 	HSE_clock_frequency = config->HSE_freq;
 	HSI_clock_frequency = 64000000 / (0b1UL << config->HSI_div);
@@ -295,7 +295,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 		(config->PLL2_config.enable << RCC_CR_PLL2RDY_Pos)				|
 		(config->PLL1_config.enable << RCC_CR_PLL1RDY_Pos)
 	);
-	DBAR(); while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled PLL clocks are ready
+	while ((RCC->CR & clock_ready_mask) != clock_ready_mask);	// wait until all enabled PLL clocks are ready
 	//!< configure domain pre-scalars
 	RCC->D1CFGR = (
 		(config->SYS_CLK_prescaler << RCC_D1CFGR_D1CPRE_Pos)			|
@@ -328,7 +328,7 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 		(config->RTC_HSE_prescaler << RCC_CFGR_RTCPRE_Pos)	|
 		(config->SYS_CLK_src << RCC_CFGR_SW_Pos)  // switch sys clock
 	);
-	DBAR(); while ((RCC->CFGR & RCC_CFGR_SWS) != (config->SYS_CLK_src << RCC_CFGR_SWS_Pos));	// wait until the sys clock is switched
+	while ((RCC->CFGR & RCC_CFGR_SWS) != (config->SYS_CLK_src << RCC_CFGR_SWS_Pos));	// wait until the sys clock is switched
 	//!< enable/disable HSI
 	tmp_reg = RCC->CR; tmp_reg &= ~RCC_CR_HSION;
 	tmp_reg |= config->HSI_enable << RCC_CR_HSION_Pos;
@@ -336,14 +336,14 @@ void sys_clock_init(SYS_CLK_Config_t* config) {
 	HSI_clock_frequency *= 1 - config->HSI_enable;
 	//!< configure RTC
 	RCC->CSR = (config->LSI_enable << RCC_CSR_LSION_Pos);
-	DBAR(); while ((RCC->CSR & RCC_CSR_LSIRDY) != (config->LSI_enable << RCC_CSR_LSIRDY_Pos));
+	while ((RCC->CSR & RCC_CSR_LSIRDY) != (config->LSI_enable << RCC_CSR_LSIRDY_Pos));
 	RCC->BDCR = (
 		(config->RTC_enable << RCC_BDCR_RTCEN_Pos)						|
 		(config->RTC_src << RCC_BDCR_RTCSEL_Pos)						|
 		(config->LSE_CSS_enable << RCC_BDCR_LSECSSON_Pos)				|
 		(config->LSE_enable << RCC_BDCR_LSEON_Pos)
 	);
-	DBAR(); while ((RCC->BDCR & RCC_BDCR_LSERDY) != (config->LSE_enable << RCC_BDCR_LSERDY_Pos));
+	while ((RCC->BDCR & RCC_BDCR_LSERDY) != (config->LSE_enable << RCC_BDCR_LSERDY_Pos));
 	RCC->CIER = (config->LSE_CSS_enable << RCC_CIER_LSECSSIE_Pos);
 	//!< update RTC frequency variables
 	switch ((RTC_SRC_t)config->RTC_src) {

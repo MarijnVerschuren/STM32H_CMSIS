@@ -82,18 +82,19 @@ int main(void) {
 	*/
 
 	/* GPIO config */
-	/*config_GPIO(GPIOA, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);	// user led D2
+	config_GPIO(GPIOA, 1, GPIO_output, GPIO_no_pull, GPIO_push_pull);	// user led D2
 	config_GPIO(GPIOE, 3, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K1
 	config_GPIO(GPIOC, 5, GPIO_input, GPIO_pull_up, GPIO_open_drain);	// user button K2
-	GPIO_write(GPIOA, 1, 1);*/
+	GPIO_write(GPIOA, 1, 1);
 
 	/* EXTI config */
-	/*config_EXTI(3, GPIOE, 1, 1);	start_EXTI(3);
-	config_EXTI(5, GPIOC, 1, 1);	start_EXTI(5);*/
+	config_EXTI(3, GPIOE, 1, 1);	start_EXTI(3);
+	config_EXTI(5, GPIOC, 1, 1);	start_EXTI(5);
 
 	/* MCO config */
 	/*config_MCO(MCO2_C9, MCO2_SRC_PLL1_P, 1);  // 400 MHz
 	*/
+	config_MCO(MCO1_A8, MCO1_SRC_HSI48, 0xF);  // 4MHz?
 	/* PWM config */
 	/*config_PWM(TIM1_CH1_A8, TIM_APB2_kernel_frequency / 1000000, 20000);  // 50Hz
 	*/
@@ -131,7 +132,7 @@ int main(void) {
 	config_USB_kernel_clock(USB_CLK_SRC_HSI48);  // HSI48 is solely used for USB
 	config_USB_FS_device(USB2_FS_DP_A12, USB2_FS_DN_A11);
 	USB2_OTG_FS->CID = 0x4D2E562EUL; // set CID to "M.V." for fun :)
-	// config interfaces  TODO: redo structure!!!!!
+	// config interfaces  TODO: redo structure!!!!! ( hide handle :(( )
 	USB_handle_t* handle = fconfig_USB_handle(USB2_OTG_FS, USB_CLASS_HID_KEYBOARD, 1U, 0U, HID_KEYBOARD_DESCRIPTOR_SIZE);
 	// start device
 	(void)write_descriptor(

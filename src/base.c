@@ -8,7 +8,7 @@
 /*!<
  * device
  * */
-void enable_id(dev_id_t id) { DBAR();
+void enable_id(dev_id_t id) {
 	if (id.clk == DEV_CLOCK_NONE) { return; }
 	uint32_t mask = (0b1UL << (id.num & 0b11111UL));
 	volatile uint32_t* reg; switch (id.clk) {

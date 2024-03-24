@@ -6,7 +6,7 @@
 #define STM32H_CMSIS_BASE_H
 #include "main.h"
 
-#define DEBUG
+
 /*!<
  * defines
  */
@@ -21,7 +21,6 @@
 #else
 #define DBAR()
 #endif
-__attribute__((arm))
 
 /*!<
  * device types
